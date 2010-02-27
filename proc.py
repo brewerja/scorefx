@@ -1,11 +1,14 @@
 #!/usr/bin/python
 
+# Parse an MLB play-by-play XML file and build a scorecard
+
 from models import Batter
 import re
 from urllib2 import urlopen
 from xml.sax import saxutils
 
 bases = {"1B" : 1, "2B" : 2, "3B" : 3, "" : 4}
+# Map event attributes to scoring codes
 plays = {"Strikeout" : "K",
          "Batter Interference" : "BI",
          "Fly Out" : "F",
@@ -36,9 +39,18 @@ plays = {"Strikeout" : "K",
 class procMLB(saxutils.handler.ContentHandler):
     def __init__(self, box, url):
         self.box = box
+        # URL for the game directory
         self.url = url
+        # Keep track of which team is at bat
         self.curTeam = None
+        # Keep track of where runners are and how they advance
+        # 0=batter, 1=first, etc.
+        # If there's a runner on base, the entry at the offset will indicate
+        # which base the runner advanced to
+        # Ex: [2, 3, 4, None] runners on first and second.  Batter doubles,
+        # runner from first to third and runner from second scores
         self.onBase = [None, None, None, None]
+        self.batters = dict()
         
     def startElement(self, name, attrs):
         if (name == 'top'):
@@ -48,7 +60,9 @@ class procMLB(saxutils.handler.ContentHandler):
             self.curTeam = "H"
             self.onBase = [None, None, None, None]
         elif (name == 'atbat'):
-            # Adjust baserunners
+            # Adjust baserunners.  onBase currently stores info on advancement
+            # Make a copy, reset onBase and place baserunners
+            # the default is runners don't advance
             tmp = list(self.onBase)
             self.onBase = [None, None, None, None]
             for t in tmp :
@@ -58,45 +72,60 @@ class procMLB(saxutils.handler.ContentHandler):
             self.play = attrs.get('event')
             if self.play in plays :
                 self.play = plays[self.play]
+            # look up batterId
             batterID = attrs.get('batter')
-            btrs = Batter.gql("WHERE pid=:1", batterID)
-            if btrs.count() == 0 :
-                f = urlopen(self.url + "/batters/" + batterID + ".xml")
-                s = f.read()
-                f.close()
-                btr = Batter()
-                btr.pid = batterID
-                btr.first = re.search('first_name="(.*?)"', s).group(1)
-                btr.last = re.search('last_name="(.*?)"', s).group(1)
-                btr.put()
+            if batterID in self.batters :
+                btr = self.batters[batterID]
             else :
-                btr = btrs.fetch(1)[0]
+                # We haven't seen the batter in this game yet, query the db
+                btrs = Batter.gql("WHERE pid=:1", batterID)
+                if btrs.count() == 0 :
+                    # Not in the db, look him up and add him
+                    f = urlopen(self.url + "/batters/" + batterID + ".xml")
+                    s = f.read()
+                    f.close()
+                    btr = Batter()
+                    btr.pid = batterID
+                    btr.first = re.search('first_name="(.*?)"', s).group(1)
+                    btr.last = re.search('last_name="(.*?)"', s).group(1)
+                    btr.put()
+                else :
+                    btr = btrs.fetch(1)[0]
+                # Cache the batter to save future trips to the db
+                self.batters[batterID] = btr
             self.batter = btr.first[0] + ". " + btr.last
         elif (name == 'runner'):
+            # Handle a runner advancing
             start = attrs.get('start')
             end = attrs.get('end')
 
+            # parsing start is easy enough
             if start == "" :
                 fromBase = 0
             else :
                 fromBase = bases[start]
-            toBase = bases[end]
 
+            # handling end is tougher
+            # "" doesn't mean the same thing all the time
+            # if the runner scores end will be "" and score will be "T"
+            # at the end of the inning, stranded runners have end = ""
+            # other places?
+            toBase = bases[end]
             if attrs.get('score') == "T" :
                 self.scored.append(fromBase)
             elif toBase == 4 :
                 toBase = fromBase
+            # update our runner tracking array
             self.onBase[fromBase] = toBase
                 
     def endElement(self, name):
-        if (name == 'inning'):
-            return
-        elif name == 'atbat' :
-            #print self.curTeam + " " + self.batter + " " + self.play
+        if name == 'atbat' :
+            # We're done with this atbat, write out the play and the runners
             self.box.writeBatter(self.curTeam, self.batter, self.play, self.onBase[0])
             for fromBase, toBase in enumerate(self.onBase) :
+                # toBase == None means no runner on fromBase
+                # fromBase == 0 is the batter, we handle that in writeBatter
                 if toBase and fromBase > 0 :
-                    #print "  " + str(fromBase) + " -> " + str(toBase)
                     self.box.advanceRunner(self.curTeam, fromBase, toBase)
     
 
