@@ -1,0 +1,15 @@
+<html>
+<body>
+ <form action="scorecard">
+  <select name="gameID">
+   {% for game in games %}
+    <option value="{{ game.url }}">{{ game.away }} @ {{ game.home }}</option
+   {% endfor %}
+   <input type="hidden" value="{{ year }}" name="year"/>
+   <input type="hidden" value="{{ month }}" name="month"/>
+   <input type="hidden" value="{{ day }}" name="day"/>
+   <button type="submit">Submit</button>
+  </select>
+ </form>
+</body>
+</html>
