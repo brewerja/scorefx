@@ -12,12 +12,13 @@ bases = {"1B" : 1, "2B" : 2, "3B" : 3, "" : 4}
 plays = {"Strikeout" : "K",
          "Batter Interference" : "BI",
          "Fly Out" : "F",
+         "Flyout" : "F",
          "Sac Fly" : "F",
          "Grounded Into DP" : "G",
          "Ground Out" : "G",
+         "Groundout" : "G",
          "Home Run" : "F",
          "Force Out" : "XXX",
-         "Double" : "XXX",
          "Runner Out" : "XXX",
          "Field Error" : "XXX",
          "Fielders Choice Out" : "XXX",
@@ -26,15 +27,22 @@ plays = {"Strikeout" : "K",
          "Double Play" : "XXX",
          "Line Out" : "L",
          "Strikeout - DP" : "K",
-         "Pop Out" : "F",
+         "Pop Out" : "P",
          "Fan interference" : "INT",
          "Bunt Pop Out" : "B",
          "Fielders Choice" : "XXX",
          "Walk" : "BB",
          "Intent Walk" : "IBB",
-         "Single" : "XXX",
-         "Triple" : "XXX",
          "Sac Bunt" : "B"}
+positions = {"pitcher" : "1",
+             "catcher" : "2",
+             "first" : "3",
+             "second" : "4",
+             "third" : "5",
+             "shortstop" : "6",
+             "left" : "7",
+             "center" : "8",
+             "right" : "9"}
          
 class procMLB(saxutils.handler.ContentHandler):
     def __init__(self, box, url):
@@ -69,9 +77,10 @@ class procMLB(saxutils.handler.ContentHandler):
                 if t and t < 4 :
                     self.onBase[t] = t
             self.scored = []
-            self.play = attrs.get('event')
-            if self.play in plays :
-                self.play = plays[self.play]
+            #self.play = attrs.get('event')
+            #if self.play in plays :
+            #    self.play = plays[self.play]
+            self.play = self.parsePlay(attrs.get('des'), attrs.get('event'))
             # look up batterId
             batterID = attrs.get('batter')
             if batterID in self.batters :
@@ -128,4 +137,25 @@ class procMLB(saxutils.handler.ContentHandler):
                 if toBase and fromBase > 0 :
                     self.box.advanceRunner(self.curTeam, fromBase, toBase)
     
+    def parsePlay(self, des, event) :
+        des = des.partition("    ")[0]
+        if event in plays :
+            play = plays[event]
+        else :
+            m = re.search("line|ground|fly", des)
+            if m :
+                if m.group(0) == "line" :
+                    play = "L"
+                elif m.group(0) == "ground" :
+                    play = "G"
+                elif m.group(0) == "fly" :
+                    play = "F"
+            else :
+                play = "XXX"
+        # Get the number of the position player who made the play, if needed
+        if play in ("L", "G", "B", "F", "P") :
+            m = re.search("left|right|center|first|second|third|shortstop|pitcher|catcher", des)
+            if m :
+                play += positions[m.group(0)]
 
+        return play
