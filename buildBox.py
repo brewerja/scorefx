@@ -37,7 +37,7 @@ class BoxScore :
         f = self.imgFileTmp
         f.write('<line x1="' + str(x1) + '" y1="' + str(y1) + '" x2="' + str(x2) + '" y2="' + str(y2) + '"/>\n')
 
-    def writeText(self, txt, x, y, rot=0, rx=-1, ry=-1, anchor=None, size=10) :
+    def writeText(self, txt, x, y, rot=0, rx=-1, ry=-1, anchor=None, size=10, color="black") :
         f = self.imgFileTmp
         f.write('<text x="' + str(x) + '" y="' + str(y) + '"')
         if (rot > 0) :
@@ -48,6 +48,7 @@ class BoxScore :
             f.write(' transform="rotate(' + str(rot) + ',' + str(rx) + ',' + str(ry) + ')"')
         if anchor :
             f.write(' text-anchor="' + anchor + '"')
+        f.write(' fill="' + color + '"')
         f.write(' style="font-family:Arial; font-size: ' + str(size) + 'pt;">' + txt + '</text>\n')
 
     def writeCircle(self, x, y, r) :
@@ -176,7 +177,7 @@ xmlns="http://www.w3.org/2000/svg">
             x = x - 5
         self.writeText(name, x, y + h / 2, rot=rot, anchor="middle")
     
-    def writeBatter(self, team, name, play, base=0, error=False) :
+    def writeBatter(self, team, name, play, out, base=0, error=False) :
         if not base :
             base = 0
         if team == "A" :
@@ -211,7 +212,11 @@ xmlns="http://www.w3.org/2000/svg">
         self.writeText(name, x, y, anchor=anchor)
 
         x += m*15
-        self.writeText(play, x, y, anchor="middle")
+        if out :
+            color = "red"
+        else :
+            color = "green"
+        self.writeText(play, x, y, anchor="middle", color=color)
 
     def advanceRunner(self, team, fromBase, toBase, safe=True, error=False) :
         if team == "A" :

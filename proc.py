@@ -9,31 +9,28 @@ from xml.sax import saxutils
 
 bases = {"1B" : 1, "2B" : 2, "3B" : 3, "" : 4}
 # Map event attributes to scoring codes
-plays = {"Strikeout" : "K",
-         "Batter Interference" : "BI",
-         "Fly Out" : "F",
-         "Flyout" : "F",
-         "Sac Fly" : "F",
-         "Grounded Into DP" : "G",
-         "Ground Out" : "G",
-         "Groundout" : "G",
-         "Home Run" : "F",
-         "Force Out" : "XXX",
-         "Runner Out" : "XXX",
-         "Field Error" : "XXX",
-         "Fielders Choice Out" : "XXX",
-         "Hit By Pitch" : "HBP",
-         "Bunt Ground Out" : "XXX",
-         "Double Play" : "XXX",
-         "Line Out" : "L",
-         "Strikeout - DP" : "K",
-         "Pop Out" : "P",
-         "Fan interference" : "INT",
-         "Bunt Pop Out" : "B",
-         "Fielders Choice" : "XXX",
-         "Walk" : "BB",
-         "Intent Walk" : "IBB",
-         "Sac Bunt" : "B"}
+wrds = ["grounds",
+        "walks",
+        "flies",
+        "hits",
+        "strikes",
+        "doubles",
+        "lines",
+        "singles",
+        "called",
+        "hit",
+        "pops",
+        "homers",
+        "reaches",
+        "out"]
+plays = { "strikeout" : "K",
+          "walk" : "BB",
+          "ground" : "G",
+          "fly" : "F",
+          "line" : "L",
+          "home run" : "HR",
+          "error" : "E",
+          "sac fly" : "SF"}
 positions = {"pitcher" : "1",
              "catcher" : "2",
              "first" : "3",
@@ -59,6 +56,7 @@ class procMLB(saxutils.handler.ContentHandler):
         # runner from first to third and runner from second scores
         self.onBase = [None, None, None, None]
         self.batters = dict()
+        self.offline = False
         
     def startElement(self, name, attrs):
         if (name == 'top'):
@@ -80,10 +78,12 @@ class procMLB(saxutils.handler.ContentHandler):
             #self.play = attrs.get('event')
             #if self.play in plays :
             #    self.play = plays[self.play]
-            self.play = self.parsePlay(attrs.get('des'), attrs.get('event'))
+            (self.play, self.out) = self.parsePlay(attrs.get('des'))
             # look up batterId
             batterID = attrs.get('batter')
-            if batterID in self.batters :
+            if self.offline :
+                self.batter = batterID
+            elif batterID in self.batters :
                 btr = self.batters[batterID]
             else :
                 # We haven't seen the batter in this game yet, query the db
@@ -102,7 +102,8 @@ class procMLB(saxutils.handler.ContentHandler):
                     btr = btrs.fetch(1)[0]
                 # Cache the batter to save future trips to the db
                 self.batters[batterID] = btr
-            self.batter = btr.first[0] + ". " + btr.last
+            if not self.offline :
+                self.batter = btr.first[0] + ". " + btr.last
         elif (name == 'runner'):
             # Handle a runner advancing
             start = attrs.get('start')
@@ -130,32 +131,81 @@ class procMLB(saxutils.handler.ContentHandler):
     def endElement(self, name):
         if name == 'atbat' :
             # We're done with this atbat, write out the play and the runners
-            self.box.writeBatter(self.curTeam, self.batter, self.play, self.onBase[0])
+            self.box.writeBatter(self.curTeam, self.batter, self.play, self.out, self.onBase[0])
             for fromBase, toBase in enumerate(self.onBase) :
                 # toBase == None means no runner on fromBase
                 # fromBase == 0 is the batter, we handle that in writeBatter
                 if toBase and fromBase > 0 :
                     self.box.advanceRunner(self.curTeam, fromBase, toBase)
     
-    def parsePlay(self, des, event) :
-        des = des.partition("    ")[0]
-        if event in plays :
-            play = plays[event]
-        else :
-            m = re.search("line|ground|fly", des)
-            if m :
-                if m.group(0) == "line" :
-                    play = "L"
-                elif m.group(0) == "ground" :
-                    play = "G"
-                elif m.group(0) == "fly" :
-                    play = "F"
+    def parsePlay(self, des) :
+        name = ""
+        play = "XXX"
+        out = False
+        found = False
+        i = 0
+        # Split into sentences and strip trailing periods
+        lines = des.split(".    ")
+        action = re.sub("\.\s*$", "", lines[0])
+        words = action.split()
+        for word in words :
+            # Until we find the type of play, we have the batter's name
+            if word in wrds :
+                found = True
+                break
             else :
-                play = "XXX"
-        # Get the number of the position player who made the play, if needed
-        if play in ("L", "G", "B", "F", "P") :
-            m = re.search("left|right|center|first|second|third|shortstop|pitcher|catcher", des)
-            if m :
-                play += positions[m.group(0)]
-
-        return play
+                name += word
+                i += 1
+                
+        if not found :
+            return (play, out)
+        
+        if word == "strikes" or word == "called" :
+            # "strikes out swinging"
+            # "strikes out on foul tip"
+            # "called out on strikes"
+            play = plays["strikeout"]
+            out = True
+        elif word == "walks" :
+            play = plays["walk"]
+            out = False
+        elif word == "grounds" :
+            if words[i+1] == "out," :
+                play = plays["ground"] + positions[words[i+2]]
+                out = True
+            elif ''.join(words[i+1:i+3]) == "outto" :
+                play = plays["ground"] + positions[words[i+3]]
+                out = True
+            elif ''.join(words[i+1:i+4]) == "intodoubleplay," :
+                play = "DP"
+                out = True
+            elif ''.join(words[i+1:i+5]) == "intoaforceout," :
+                play = plays["ground"] + positions[words[i+5]]
+                out = True
+        elif word == "flies" or word == "pops" :
+            play = plays["fly"] + positions[words[i+3]]
+            out = True
+        elif word == "lines" :
+            play = plays["line"] + positions[words[i+3]]
+            out = True
+        elif word == "singles" or word == "doubles" or word == "triples" :
+            # description is "on a (fly ball|ground ball|line drive) to (position)"
+            # there is sometimes an adjective (soft, hard) after "on a"
+            mtch = re.search("on a.* (fly|ground|line) .* to (\w*)", action)
+            play = plays[mtch.group(1)] + positions[mtch.group(2)]
+            out = False
+        elif word == "reaches" :
+            if re.search("reaches on \w* error", action) :
+                mtch = re.search("error by (\w*)", action)
+                play = plays["error"] + positions[mtch.group(1)]
+                out = False
+        elif word == "homers" :
+            play = plays["home run"]
+            out = False
+        elif word == "out" :
+            mtch = re.search("on a sacrifice fly to (\w*)", action)
+            if mtch :
+                play = plays["sac fly"] + positions[mtch.group(1)]
+                out = True
+                
+        return (play, out)
