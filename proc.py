@@ -170,8 +170,10 @@ class procMLB(saxutils.handler.ContentHandler):
             play = plays["walk"]
             out = False
         elif word == "grounds" :
-            if words[i+1] == "out," :
-                play = plays["ground"] + positions[words[i+2]]
+            print action
+            mtch = re.search("grounds out.*?, (\w*)", action)
+            if mtch :
+                play = plays["ground"] + positions[mtch.group(1)]
                 out = True
             elif ''.join(words[i+1:i+3]) == "outto" :
                 play = plays["ground"] + positions[words[i+3]]
@@ -180,19 +182,32 @@ class procMLB(saxutils.handler.ContentHandler):
                 play = "DP"
                 out = True
             elif ''.join(words[i+1:i+5]) == "intoaforceout," :
-                play = plays["ground"] + positions[words[i+5]]
+                # description is "grounds into a force out, (pos) to (pos)"
+                # or "grounds into a force out, fielded by (pos)."
+                play = plays["ground"]
+                tmp = action.split(",")[1]
+                mtch = re.search("fielded by (\w*)", tmp)
+                if mtch :
+                    play += positions[mtch.group(1)]
+                else :
+                    play += positions[tmp.split()[0]]
                 out = True
         elif word == "flies" or word == "pops" :
-            play = plays["fly"] + positions[words[i+3]]
+            mtch = re.search("out.*? to (\w*)", action)
+            play = plays["fly"] + positions[mtch.group(1)]
             out = True
         elif word == "lines" :
-            play = plays["line"] + positions[words[i+3]]
+            mtch = re.search("out.*? to (\w*)", action)
+            play = plays["line"] + positions[mtch.group(1)]
             out = True
         elif word == "singles" or word == "doubles" or word == "triples" :
-            # description is "on a (fly ball|ground ball|line drive) to (position)"
+            # description is "on a (fly ball|ground ball|line drive|pop up) to (position)"
             # there is sometimes an adjective (soft, hard) after "on a"
-            mtch = re.search("on a.* (fly|ground|line) .* to (\w*)", action)
-            play = plays[mtch.group(1)] + positions[mtch.group(2)]
+            mtch = re.search("on a.*? (fly|ground|line|pop) .*? to (\w*)", action)
+            tmp = mtch.group(1)
+            if tmp == "pop" :
+                tmp = "fly"
+            play = plays[tmp] + positions[mtch.group(2)]
             out = False
         elif word == "reaches" :
             if re.search("reaches on \w* error", action) :
