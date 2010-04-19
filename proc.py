@@ -174,8 +174,11 @@ class procMLB(saxutils.handler.ContentHandler):
             if mtch :
                 play = plays["ground"] + positions[mtch.group(1)]
                 out = True
-            elif ''.join(words[i+1:i+3]) == "outto" :
+            elif (words[i+1] == "out" and words[i+2] == "to") :
                 play = plays["ground"] + positions[words[i+3]]
+                out = True
+            elif (words[i+1] == "out" and words[i+3] == "to") :
+                play = plays["ground"] + positions[words[i+4]]
                 out = True
             elif ''.join(words[i+1:i+4]) == "intodoubleplay," :
                 play = "DP"
