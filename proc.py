@@ -170,7 +170,6 @@ class procMLB(saxutils.handler.ContentHandler):
             play = plays["walk"]
             out = False
         elif word == "grounds" :
-            print action
             mtch = re.search("grounds out.*?, (\w*)", action)
             if mtch :
                 play = plays["ground"] + positions[mtch.group(1)]
