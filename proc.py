@@ -14,13 +14,15 @@ wrds = ["grounds",
         "flies",
         "hits",
         "strikes",
-        "doubles",
-        "lines",
         "singles",
+        "doubles",
+        "triples",
+        "homers",
+        "lines",
         "called",
         "hit",
+        "hits",
         "pops",
-        "homers",
         "reaches",
         "out"]
 plays = { "strikeout" : "K",
@@ -30,7 +32,8 @@ plays = { "strikeout" : "K",
           "line" : "L",
           "home run" : "HR",
           "error" : "E",
-          "sac fly" : "SF"}
+          "sac fly" : "SF",
+          "sac bunt" : "SH"}
 positions = {"pitcher" : "1",
              "catcher" : "2",
              "first" : "3",
@@ -220,9 +223,17 @@ class procMLB(saxutils.handler.ContentHandler):
             play = plays["home run"]
             out = False
         elif word == "out" :
-            mtch = re.search("on a sacrifice fly to (\w*)", action)
+            mtch = re.search("on a sacrifice (\w*)(,| to) (\w*)", action)
             if mtch :
-                play = plays["sac fly"] + positions[mtch.group(1)]
-                out = True
-                
+                if mtch.group(1) == "fly" :
+                    play = plays["sac fly"] + positions[mtch.group(3)]
+                    out = True
+                elif mtch.group(1) == "bunt" :
+                    play = plays["sac bunt"] + positions[mtch.group(3)]
+                    out = True
+        elif word == "hits" :
+            mtch = re.search("ground-rule double .* on a (\w*) .*? to (\w*)", action)
+            if mtch :
+                play = plays[mtch.group(1)] + positions[mtch.group(2)]
+                out = False
         return (play, out)
