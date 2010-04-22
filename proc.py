@@ -199,8 +199,13 @@ class procMLB(saxutils.handler.ContentHandler):
                 out = True
         elif word == "flies" or word == "pops" :
             mtch = re.search("out.*? to (\w*)", action)
-            play = plays["fly"] + positions[mtch.group(1)]
-            out = True
+            if mtch :
+                play = plays["fly"] + positions[mtch.group(1)]
+                out = True
+            mtch = re.search("into.*? double play, (\w*)", action)
+            if mtch :
+                play = plays["fly"] + positions[mtch.group(1)]
+                out = True
         elif word == "lines" :
             mtch = re.search("out.*? to (\w*)", action)
             if mtch :
