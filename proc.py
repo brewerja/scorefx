@@ -247,4 +247,7 @@ class procMLB(saxutils.handler.ContentHandler):
             if mtch :
                 play = plays[mtch.group(1)] + positions[mtch.group(2)]
                 result = const.HIT
+            elif ''.join(words[i+1:i+4]) == "agrandslam" :
+                play = plays["home run"]
+                result = const.HIT
         return (play, result)
