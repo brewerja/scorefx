@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import tempfile
+import const
 
 class BoxScore :
     nameWidth = 100
@@ -177,7 +178,7 @@ xmlns="http://www.w3.org/2000/svg">
             x = x - 5
         self.writeText(name, x, y + h / 2, rot=rot, anchor="middle")
     
-    def writeBatter(self, team, name, play, out, base=0, error=False) :
+    def writeBatter(self, team, name, play, result, base=0, error=False) :
         if not base :
             base = 0
         if team == "A" :
@@ -213,11 +214,15 @@ xmlns="http://www.w3.org/2000/svg">
 
         x += m*15
         weight = "normal"
-        if out :
+        if result == const.OUT :
             color = "red"
-        else :
+        elif result == const.HIT :
             color = "green"
             weight = "bold"
+        elif result == const.ERROR :
+            color = "orange"
+        else :
+            color = "black"
         self.writeText(play, x, y, anchor="middle", color=color, weight=weight)
 
     def advanceRunner(self, team, fromBase, toBase, safe=True, error=False) :
