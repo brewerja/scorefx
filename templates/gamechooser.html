@@ -3,7 +3,7 @@
  <form action="scorecard">
   <select name="gameID">
    {% for game in games %}
-    <option value="{{ game.url }}">{{ game.away }} @ {{ game.home }}</option
+    <option value="{{ game.url }}">{{ game.away }} @ {{ game.home }}</option>
    {% endfor %}
    <input type="hidden" value="{{ year }}" name="year"/>
    <input type="hidden" value="{{ month }}" name="month"/>
