@@ -34,7 +34,8 @@ plays = { "strikeout" : "K",
           "home run" : "HR",
           "error" : "E",
           "sac fly" : "SF",
-          "sac bunt" : "SH"}
+          "sac bunt" : "SH",
+          "fielder's choice" : "FC"}
 positions = {"pitcher" : "1",
              "catcher" : "2",
              "first" : "3",
@@ -230,6 +231,10 @@ class procMLB(saxutils.handler.ContentHandler):
                 mtch = re.search("error by (\w*)", action)
                 play = plays["error"] + positions[mtch.group(1)]
                 result = const.ERROR
+            if re.search("reaches on a fielder's choice", action) :
+                mtch = re.search("fielded by (\w*)", action)
+                play = plays["fielder's choice"] + positions[mtch.group(1)]
+                result = const.OTHER
         elif word == "homers" :
             play = plays["home run"]
             result = const.HIT
