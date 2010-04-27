@@ -35,7 +35,8 @@ plays = { "strikeout" : "K",
           "error" : "E",
           "sac fly" : "SF",
           "sac bunt" : "SH",
-          "fielder's choice" : "FC"}
+          "fielder's choice" : "FC",
+          "hit by pitch" : "HBP"}
 positions = {"pitcher" : "1",
              "catcher" : "2",
              "first" : "3",
@@ -254,5 +255,9 @@ class procMLB(saxutils.handler.ContentHandler):
                 result = const.HIT
             elif ''.join(words[i+1:i+4]) == "agrandslam" :
                 play = plays["home run"]
+                result = const.HIT
+        elif word == "hit" :
+            if re.search("hit by pitch", action) :
+                play = plays["hit by pitch"]
                 result = const.HIT
         return (play, result)
