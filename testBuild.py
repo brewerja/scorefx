@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 from buildBox import BoxScore
 from proc import procMLB

@@ -85,6 +85,7 @@ class procMLB(saxutils.handler.ContentHandler):
             #if self.play in plays :
             #    self.play = plays[self.play]
             (self.play, self.result) = self.parsePlay(attrs.get('des'))
+            
             # look up batterId
             batterID = attrs.get('batter')
             if self.offline :
@@ -234,6 +235,8 @@ class procMLB(saxutils.handler.ContentHandler):
                 result = const.ERROR
             if re.search("reaches on a fielder's choice", action) :
                 mtch = re.search("fielded by (\w*)", action)
+                if mtch == None:
+                    mtch = re.search("reaches on a fielder's choice out, (\w*)", action)
                 play = plays["fielder's choice"] + positions[mtch.group(1)]
                 result = const.OTHER
         elif word == "homers" :
