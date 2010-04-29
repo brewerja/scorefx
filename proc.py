@@ -257,10 +257,16 @@ class procMLB(saxutils.handler.ContentHandler):
                     play = plays["sac bunt"] + positions[mtch.group(3)]
                     result = const.OUT
         elif word == "hits" :
-            mtch = re.search("ground-rule double .* on a (\w*) .*? to (\w*)", action)
-            if mtch :
-                play = plays[mtch.group(1)] + positions[mtch.group(2)]
-                result = const.HIT
+            mtch = re.search("ground-rule double", action)
+            if mtch:
+                mtch = re.search("ground-rule double .* on a (\w*) .*? to (\w*)", action)
+                if mtch:
+                    play = plays[mtch.group(1)] + positions[mtch.group(2)]
+                    result = const.HIT
+                mtch = re.search("ground-rule double .* on a (\w*) .*? down the (\w*)", action)
+                if mtch:
+                    play = plays[mtch.group(1)] + positions[mtch.group(2)]
+                    result = const.HIT                
             elif ''.join(words[i+1:i+4]) == "agrandslam" :
                 play = plays["home run"]
                 result = const.HIT
