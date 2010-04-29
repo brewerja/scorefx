@@ -63,6 +63,7 @@ class procMLB(saxutils.handler.ContentHandler):
         self.onBase = [None, None, None, None]
         self.batters = dict()
         self.offline = False
+        self.desc = ''
         
     def startElement(self, name, attrs):
         if (name == 'top'):
@@ -71,6 +72,8 @@ class procMLB(saxutils.handler.ContentHandler):
         elif (name == 'bottom'):
             self.curTeam = "H"
             self.onBase = [None, None, None, None]
+        elif (name == 'action'):
+            self.desc = self.desc + attrs.get('des')
         elif (name == 'atbat'):
             # Adjust baserunners.  onBase currently stores info on advancement
             # Make a copy, reset onBase and place baserunners
@@ -84,6 +87,7 @@ class procMLB(saxutils.handler.ContentHandler):
             #self.play = attrs.get('event')
             #if self.play in plays :
             #    self.play = plays[self.play]
+            self.desc = self.desc + attrs.get('des')
             (self.play, self.result) = self.parsePlay(attrs.get('des'))
             
             # look up batterId
@@ -138,7 +142,8 @@ class procMLB(saxutils.handler.ContentHandler):
     def endElement(self, name):
         if name == 'atbat' :
             # We're done with this atbat, write out the play and the runners
-            self.box.writeBatter(self.curTeam, self.batter, self.play, self.result, self.onBase[0])
+            self.box.writeBatter(self.curTeam, self.batter, self.play, self.result, self.desc, self.onBase[0])
+            self.desc = ''
             for fromBase, toBase in enumerate(self.onBase) :
                 # toBase == None means no runner on fromBase
                 # fromBase == 0 is the batter, we handle that in writeBatter

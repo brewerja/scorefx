@@ -38,7 +38,7 @@ class BoxScore :
         f = self.imgFileTmp
         f.write('<line x1="' + str(x1) + '" y1="' + str(y1) + '" x2="' + str(x2) + '" y2="' + str(y2) + '"/>\n')
 
-    def writeText(self, txt, x, y, rot=0, rx=-1, ry=-1, anchor=None, size=10, color="black", weight="normal") :
+    def writeText(self, txt, x, y, rot=0, rx=-1, ry=-1, anchor=None, size=10, color="black", weight="normal", desc=None) :
         f = self.imgFileTmp
         f.write('<text x="' + str(x) + '" y="' + str(y) + '"')
         if (rot > 0) :
@@ -50,7 +50,10 @@ class BoxScore :
         if anchor :
             f.write(' text-anchor="' + anchor + '"')
         f.write(' fill="' + color + '"')
-        f.write(' style="font-family:Arial; font-size: ' + str(size) + 'pt; font-weight:' + weight +';">' + txt + '</text>\n')
+        f.write(' style="font-family:Arial; font-size: ' + str(size) + 'pt; font-weight:' + weight +';"')
+        if desc != None:
+            f.write(' xlink:title="' + desc + '"')
+        f.write('>' + txt + '</text>\n')
 
     def writeCircle(self, x, y, r) :
         f = self.imgFileTmp
@@ -120,7 +123,7 @@ class BoxScore :
 "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 
 <svg width="''' + str(self.homeX) + '" height="' + str(h + 2*self.boxBuffer) + '''" version="1.1"
-xmlns="http://www.w3.org/2000/svg">
+xmlns="http://www.w3.org/2000/svg" xmlns:xlink='http://www.w3.org/1999/xlink'>
 ''')
         img.write('\n\n')
         # Then we back up to the start of the tempfile and write it's contents to the image file
@@ -178,7 +181,7 @@ xmlns="http://www.w3.org/2000/svg">
             x = x - 5
         self.writeText(name, x, y + h / 2, rot=rot, anchor="middle")
     
-    def writeBatter(self, team, name, play, result, base=0, error=False) :
+    def writeBatter(self, team, name, play, result, desc, base=0, error=False) :
         if not base :
             base = 0
         if team == "A" :
@@ -223,7 +226,7 @@ xmlns="http://www.w3.org/2000/svg">
             color = "orange"
         else :
             color = "black"
-        self.writeText(play, x, y, anchor="middle", color=color, weight=weight)
+        self.writeText(play, x, y, anchor="middle", color=color, weight=weight, desc=desc)
 
     def advanceRunner(self, team, fromBase, toBase, safe=True, error=False) :
         if team == "A" :
