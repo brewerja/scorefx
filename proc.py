@@ -27,6 +27,7 @@ wrds = ["grounds",
         "reaches",
         "out"]
 plays = { "strikeout" : "K",
+          "strikeout_looking" : "Kl",
           "walk" : "BB",
           "ground" : "G",
           "fly" : "F",
@@ -36,7 +37,7 @@ plays = { "strikeout" : "K",
           "sac fly" : "SF",
           "sac bunt" : "SH",
           "fielder's choice" : "FC",
-          "hit by pitch" : "HBP"}
+          "hit by pitch" : "HB"}
 positions = {"pitcher" : "1",
              "catcher" : "2",
              "first" : "3",
@@ -172,11 +173,14 @@ class procMLB(saxutils.handler.ContentHandler):
         if not found :
             return (play, result)
         
-        if word == "strikes" or word == "called" :
+        if word == "strikes" :
             # "strikes out swinging"
             # "strikes out on foul tip"
-            # "called out on strikes"
             play = plays["strikeout"]
+            result = const.OUT
+        elif word == "called" :
+            # "called out on strikes"
+            play = plays["strikeout_looking"]
             result = const.OUT
         elif word == "walks" :
             play = plays["walk"]

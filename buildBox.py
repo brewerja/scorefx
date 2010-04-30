@@ -38,9 +38,12 @@ class BoxScore :
         f = self.imgFileTmp
         f.write('<line x1="' + str(x1) + '" y1="' + str(y1) + '" x2="' + str(x2) + '" y2="' + str(y2) + '"/>\n')
 
-    def writeText(self, txt, x, y, rot=0, rx=-1, ry=-1, anchor=None, size=10, color="black", weight="normal", desc=None) :
+    def writeText(self, txt, x, y, rot=0, rx=-1, ry=-1, anchor=None, size=10, color="black", weight="normal", desc=None, flip=False) :
         f = self.imgFileTmp
-        f.write('<text x="' + str(x) + '" y="' + str(y) + '"')
+        if (flip == True):
+            f.write('<text x="0" y="0" transform="matrix(-1 0 0 1 ' + str(x) + ' ' + str(y) + ')" ')
+        else:
+            f.write('<text x="' + str(x) + '" y="' + str(y) + '"')
         if (rot > 0) :
             if rx == -1 :
                 rx = x
@@ -226,7 +229,13 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink='http://www.w3.org/1999/xlink'>
             color = "orange"
         else :
             color = "black"
-        self.writeText(play, x, y, anchor="middle", color=color, weight=weight, desc=desc)
+            
+        flip = False
+        if play == "Kl":
+            play = "K"
+            flip = True
+            
+        self.writeText(play, x, y, anchor="middle", color=color, weight=weight, desc=desc, flip=flip)
 
     def advanceRunner(self, team, fromBase, toBase, safe=True, error=False) :
         if team == "A" :
