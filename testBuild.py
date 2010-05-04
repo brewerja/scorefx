@@ -44,7 +44,9 @@ if __name__ == '__main__' :
         f = urlopen(url + '/inning/inning_' + str(i) + '.xml')
         parser.parse(f)
         f.close()
-        box.endInning()
-    box.endBox()
+        box.endInning()                
+    box.endBox(p.homePitchers, p.awayPitchers)
+    print p.homePitchers
+    print p.awayPitchers
 
     img.close()

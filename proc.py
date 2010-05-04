@@ -9,7 +9,6 @@ from urllib2 import urlopen
 from xml.sax import saxutils
 
 bases = {"1B" : 1, "2B" : 2, "3B" : 3, "" : 4}
-# Map event attributes to scoring codes
 wrds = ["grounds",
         "walks",
         "flies",
@@ -63,8 +62,11 @@ class procMLB(saxutils.handler.ContentHandler):
         # runner from first to third and runner from second scores
         self.onBase = [None, None, None, None]
         self.batters = dict()
+        self.pitchers = dict()
         self.offline = False
         self.desc = ''
+        self.homePitchers = []
+        self.awayPitchers = []
         
     def startElement(self, name, attrs):
         if (name == 'top'):
@@ -75,7 +77,23 @@ class procMLB(saxutils.handler.ContentHandler):
             self.onBase = [None, None, None, None]
         elif (name == 'action'):
             self.desc = self.desc + attrs.get('des')
+            if attrs.get('event') == 'Pitching Substitution':                  
+                # look up pitcherID
+                pitcherID = attrs.get('player')
+                self.getPitcher(pitcherID)     
+                if self.curTeam == "A":
+                    self.homePitchers.append([self.pitcher, self.box.getCurBatter("A")])
+                elif self.curTeam == "H":
+                    self.awayPitchers.append([self.pitcher, self.box.getCurBatter("H")])
         elif (name == 'atbat'):
+            # Inefficient IF's, should just get the starting pitcher somewhere else
+            if self.homePitchers == [] or self.awayPitchers == []:
+                pitcherID = attrs.get('pitcher')
+                self.getPitcher(pitcherID)
+                if self.homePitchers == [] and self.curTeam == "A":
+                    self.homePitchers.append([self.pitcher, self.box.getCurBatter("A")])
+                elif self.awayPitchers == [] and self.curTeam == "H":
+                    self.awayPitchers.append([self.pitcher, self.box.getCurBatter("H")])                
             # Adjust baserunners.  onBase currently stores info on advancement
             # Make a copy, reset onBase and place baserunners
             # the default is runners don't advance
@@ -91,7 +109,7 @@ class procMLB(saxutils.handler.ContentHandler):
             self.desc = self.desc + attrs.get('des')
             (self.play, self.result) = self.parsePlay(attrs.get('des'))
             
-            # look up batterId
+            # look up batterID
             batterID = attrs.get('batter')
             if self.offline :
                 self.batter = batterID
@@ -279,3 +297,28 @@ class procMLB(saxutils.handler.ContentHandler):
                 play = plays["hit by pitch"]
                 result = const.HIT
         return (play, result)
+
+    def getPitcher(self, pitcherID):
+        if self.offline :
+            self.pitcher = pitcherID
+        elif pitcherID in self.pitchers :
+            p = self.pitchers[pitcherID]
+        else :
+            # We haven't seen the pitcher in this game yet, query the db
+            pchrs = Batter.gql("WHERE pid=:1", pitcherID)
+            if pchrs.count() == 0 :
+                # Not in the db, look him up and add him
+                f = urlopen(self.url + "/pitchers/" + pitcherID + ".xml")
+                s = f.read()
+                f.close()
+                p = Batter()
+                p.pid = pitcherID
+                p.first = re.search('first_name="(.*?)"', s).group(1)
+                p.last = re.search('last_name="(.*?)"', s).group(1)
+                p.put()
+            else :
+                p = pchrs.fetch(1)[0]
+            # Cache the pitcher to save future trips to the db
+            self.pitchers[pitcherID] = p
+        if not self.offline:
+            self.pitcher = p.first[0] + ". " + p.last        

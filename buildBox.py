@@ -17,7 +17,7 @@ class BoxScore :
              playWidth + 3*baseWidth,
              playWidth + 4*baseWidth]
     boxHeight = 500
-    space = 100
+    space = 175
     # awayX is the top left corner of away's box
     # homeX is the top right corner of home's box
     # this lets us lay out the boxes the same, only changing from + to -
@@ -25,7 +25,7 @@ class BoxScore :
     awayY = boxBuffer
     homeX = awayX + boxWidth + space + boxWidth
     homeY = awayY
-    pitcherBuf = 10
+    pitcherBuf = 20
     batterHeight = 17
     curHomeBatter = homeY
     curAwayBatter = awayY
@@ -88,7 +88,7 @@ class BoxScore :
 
         f.write('</g>\n\n')
         
-    def endBox(self) :
+    def endBox(self, homePitchers, awayPitchers) :
         f = self.imgFileTmp
         f.write('<g stroke="gray" stroke-width="0.1">\n')
 
@@ -116,6 +116,56 @@ class BoxScore :
         self.writeLine(x + w, y, x + w, y + h)
         
         f.write('</g>\n\n')
+        
+        # Draw Pitchers
+        f.write('<g stroke="black">\n')
+        
+        # Draw first hash mark
+        x = self.awayX + self.boxWidth + self.pitcherBuf
+        self.writeLine(x-5, self.awayY, x+5, self.awayY)
+        
+        # Draw remaining hash marks
+        for p in homePitchers:
+            self.writeLine(x-5, p[1], x+5, p[1])
+        
+        # Draw final hash
+        self.writeLine(x-5, self.awayY+h, x+5, self.awayY+h)
+        
+        
+        # Draw first hash mark
+        x = self.homeX - self.boxWidth - self.pitcherBuf
+        self.writeLine(x-5, self.homeY, x+5, self.homeY)
+        
+        # Draw remaining hash marks
+        for p in awayPitchers:
+            self.writeLine(x-5, p[1], x+5, p[1])
+        
+        # Draw final hash
+        self.writeLine(x-5, self.homeY+h, x+5, self.homeY+h)      
+        
+        # Draw lines from top to bottom (for now)
+        x = self.awayX + self.boxWidth + self.pitcherBuf
+        #self.writeLine(x, self.awayY, x, self.awayY + h)
+        
+        x = self.homeX - self.boxWidth - self.pitcherBuf
+        #self.writeLine(x, self.awayY, x, self.awayY + h)
+        f.write('</g>\n')  
+        
+        # Draw in the ID#'s of the pitchers
+        x = self.awayX + self.boxWidth + self.pitcherBuf
+        for i in range(0, len(homePitchers)-1):
+            y = (homePitchers[i][1] + homePitchers[i+1][1])/2
+            self.writeText(str(homePitchers[i][0]), x-5, y, rot=90, anchor="middle")
+        y = (homePitchers[-1][1] + self.awayY+h)/2
+        self.writeText(str(homePitchers[-1][0]), x-5, y, rot=90, anchor="middle")            
+
+        x = self.homeX - self.boxWidth - self.pitcherBuf
+        for i in range(0, len(awayPitchers)-1):
+            y = (awayPitchers[i][1] + awayPitchers[i+1][1])/2
+            self.writeText(str(awayPitchers[i][0]), x+5, y, rot=270, anchor="middle")
+        y = (awayPitchers[-1][1] + self.homeY+h)/2
+        self.writeText(str(awayPitchers[-1][0]), x+5, y, rot=270, anchor="middle")      
+
         f.write('</svg>\n')
 
         # Now that we know the image's height, we can write the SVG header
@@ -305,6 +355,12 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink='http://www.w3.org/1999/xlink'>
         self.writeLine(self.awayX + self.nameWidth, y, self.awayX + self.boxWidth, y)
         self.writeLine(self.homeX - self.nameWidth, y, self.homeX - self.boxWidth, y)
         self.imgFileTmp.write('</g>\n\n')
+    
+    def getCurBatter(self, team):
+        if team == "A":
+            return self.curAwayBatter
+        elif team == "H":
+            return self.curHomeBatter
         
     def tmp(self) :
         f = self.imgFileTmp
@@ -315,7 +371,7 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink='http://www.w3.org/1999/xlink'>
 #        self.writeBox("H")
 
 #        f.write('<!-- Home Pitcher -->\n')
-#        self.writePitcher("H", "CC Sabbathia")
+#        self.writePitcher("H", "C.C. Sabathia")
 #        f.write('<!-- Away Pitcher -->\n')
 #        self.writePitcher("A", "Cliff Lee")
 

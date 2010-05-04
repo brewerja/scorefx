@@ -83,7 +83,7 @@ class BatterLookup(webapp.RequestHandler) :
         pid = self.request.get("batterID")
         btrs = Batter.gql("WHERE pid = :1", pid)
         for btr in btrs :
-            self.response.out.write(btr.pid + " - " + btr.first[0] + ". " + btr.last)
+            self.response.out.write(btr.pid + " - " + btr.first[0] + ". " + btr.last)            
         
 class BuildScorecard(webapp.RequestHandler) :
     def get(self) :
@@ -115,7 +115,7 @@ class BuildScorecard(webapp.RequestHandler) :
             parser.parse(f)
             f.close()
             box.endInning()
-        box.endBox()
+        box.endBox(p.homePitchers, p.awayPitchers)
 
         
 application = webapp.WSGIApplication([('/', DateChooser),
