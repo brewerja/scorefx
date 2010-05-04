@@ -120,51 +120,46 @@ class BoxScore :
         # Draw Pitchers
         f.write('<g stroke="black">\n')
         
-        # Draw first hash mark
-        x = self.awayX + self.boxWidth + self.pitcherBuf
-        self.writeLine(x-5, self.awayY, x+5, self.awayY)
-        
-        # Draw remaining hash marks
-        for p in homePitchers:
-            self.writeLine(x-5, p[1], x+5, p[1])
-        
-        # Draw final hash
+        # Draw away side hash marks
+        x = self.awayX + self.boxWidth + self.pitcherBuf       
+        for i, p in enumerate(homePitchers):
+            if i == 0:
+                self.writeLine(x-5, self.awayY, x+5, self.awayY)
+            else:
+                self.writeLine(x-5, p[1]+2, x+5, p[1]+2)
         self.writeLine(x-5, self.awayY+h, x+5, self.awayY+h)
         
-        
-        # Draw first hash mark
+        # Draw home side hash marks
         x = self.homeX - self.boxWidth - self.pitcherBuf
-        self.writeLine(x-5, self.homeY, x+5, self.homeY)
+        for i, p in enumerate(awayPitchers):
+            if i == 0:
+                self.writeLine(x-5, self.homeY, x+5, self.homeY)
+            else:
+                self.writeLine(x-5, p[1]+2, x+5, p[1]+2)
+        self.writeLine(x-5, self.homeY+h, x+5, self.homeY+h)
         
-        # Draw remaining hash marks
-        for p in awayPitchers:
-            self.writeLine(x-5, p[1], x+5, p[1])
-        
-        # Draw final hash
-        self.writeLine(x-5, self.homeY+h, x+5, self.homeY+h)      
-        
-        # Draw lines from top to bottom (for now)
-        x = self.awayX + self.boxWidth + self.pitcherBuf
-        #self.writeLine(x, self.awayY, x, self.awayY + h)
-        
-        x = self.homeX - self.boxWidth - self.pitcherBuf
-        #self.writeLine(x, self.awayY, x, self.awayY + h)
         f.write('</g>\n')  
         
-        # Draw in the ID#'s of the pitchers
+        # Draw in the names of the pitchers
         x = self.awayX + self.boxWidth + self.pitcherBuf
         for i in range(0, len(homePitchers)-1):
             y = (homePitchers[i][1] + homePitchers[i+1][1])/2
-            self.writeText(str(homePitchers[i][0]), x-5, y, rot=90, anchor="middle")
+            if i == 0:
+                self.writeText(str(homePitchers[i][0]), x-5, y+1, rot=90, anchor="middle")
+            else:
+                self.writeText(str(homePitchers[i][0]), x-5, y+2, rot=90, anchor="middle")
         y = (homePitchers[-1][1] + self.awayY+h)/2
-        self.writeText(str(homePitchers[-1][0]), x-5, y, rot=90, anchor="middle")            
+        self.writeText(str(homePitchers[-1][0]), x-5, y+1, rot=90, anchor="middle")            
 
         x = self.homeX - self.boxWidth - self.pitcherBuf
         for i in range(0, len(awayPitchers)-1):
             y = (awayPitchers[i][1] + awayPitchers[i+1][1])/2
-            self.writeText(str(awayPitchers[i][0]), x+5, y, rot=270, anchor="middle")
+            if i == 0:
+                self.writeText(str(awayPitchers[i][0]), x+5, y+1, rot=270, anchor="middle")
+            else:
+                self.writeText(str(awayPitchers[i][0]), x+5, y+2, rot=270, anchor="middle")
         y = (awayPitchers[-1][1] + self.homeY+h)/2
-        self.writeText(str(awayPitchers[-1][0]), x+5, y, rot=270, anchor="middle")      
+        self.writeText(str(awayPitchers[-1][0]), x+5, y+1, rot=270, anchor="middle")      
 
         f.write('</svg>\n')
 

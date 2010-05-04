@@ -67,6 +67,7 @@ class procMLB(saxutils.handler.ContentHandler):
         self.desc = ''
         self.homePitchers = []
         self.awayPitchers = []
+        self.reliefNoOutsFlag = False
         
     def startElement(self, name, attrs):
         if (name == 'top'):
@@ -77,23 +78,40 @@ class procMLB(saxutils.handler.ContentHandler):
             self.onBase = [None, None, None, None]
         elif (name == 'action'):
             self.desc = self.desc + attrs.get('des')
-            if attrs.get('event') == 'Pitching Substitution':                  
+            e = attrs.get('event')
+            if e == 'Pitching Substitution' or e == 'Relief with No Outs':                  
                 # look up pitcherID
-                pitcherID = attrs.get('player')
-                self.getPitcher(pitcherID)     
+                self.updatePitcher(attrs.get('player'))
                 if self.curTeam == "A":
-                    self.homePitchers.append([self.pitcher, self.box.getCurBatter("A")])
+                    # If the pitcher listed here is already in the game, we need to get 
+                    # the new pitcher in the next atbat. So far I've only seen this with
+                    # the 'Relief with No Outs' event.
+                    if self.pitcher != self.homePitchers[-1][0]:
+                        self.homePitchers.append([self.pitcher, self.box.getCurBatter("A")])
+                    else:
+                        self.reliefNoOutsFlag = True
                 elif self.curTeam == "H":
-                    self.awayPitchers.append([self.pitcher, self.box.getCurBatter("H")])
+                    if self.pitcher != self.awayPitchers[-1][0]:
+                        self.awayPitchers.append([self.pitcher, self.box.getCurBatter("H")])
+                    else:
+                        self.reliefNoOutsFlag = True
         elif (name == 'atbat'):
             # Inefficient IF's, should just get the starting pitcher somewhere else
-            if self.homePitchers == [] or self.awayPitchers == []:
-                pitcherID = attrs.get('pitcher')
-                self.getPitcher(pitcherID)
-                if self.homePitchers == [] and self.curTeam == "A":
+            if self.homePitchers == [] and self.curTeam == "A":
+                self.updatePitcher(attrs.get('pitcher'))
+                self.homePitchers.append([self.pitcher, self.box.getCurBatter("A")])
+            elif self.awayPitchers == [] and self.curTeam == "H":
+                self.updatePitcher(attrs.get('pitcher'))
+                self.awayPitchers.append([self.pitcher, self.box.getCurBatter("H")])
+            if self.reliefNoOutsFlag == True:
+                self.reliefNoOutsFlag = False
+                if self.curTeam == "A":
+                    self.updatePitcher(attrs.get('pitcher'))
                     self.homePitchers.append([self.pitcher, self.box.getCurBatter("A")])
-                elif self.awayPitchers == [] and self.curTeam == "H":
-                    self.awayPitchers.append([self.pitcher, self.box.getCurBatter("H")])                
+                elif self.curTeam == "H":
+                    self.updatePitcher(attrs.get('pitcher'))
+                    self.awayPitchers.append([self.pitcher, self.box.getCurBatter("H")])                    
+                
             # Adjust baserunners.  onBase currently stores info on advancement
             # Make a copy, reset onBase and place baserunners
             # the default is runners don't advance
@@ -298,7 +316,7 @@ class procMLB(saxutils.handler.ContentHandler):
                 result = const.HIT
         return (play, result)
 
-    def getPitcher(self, pitcherID):
+    def updatePitcher(self, pitcherID):
         if self.offline :
             self.pitcher = pitcherID
         elif pitcherID in self.pitchers :
@@ -321,4 +339,4 @@ class procMLB(saxutils.handler.ContentHandler):
             # Cache the pitcher to save future trips to the db
             self.pitchers[pitcherID] = p
         if not self.offline:
-            self.pitcher = p.first[0] + ". " + p.last        
+            self.pitcher = p.first[0] + ". " + p.last 
