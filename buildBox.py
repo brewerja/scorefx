@@ -38,7 +38,7 @@ class BoxScore :
         f = self.imgFileTmp
         f.write('<line x1="' + str(x1) + '" y1="' + str(y1) + '" x2="' + str(x2) + '" y2="' + str(y2) + '"/>\n')
 
-    def writeText(self, txt, x, y, rot=0, rx=-1, ry=-1, anchor=None, size=10, color="black", weight="normal", desc=None, flip=False) :
+    def writeText(self, txt, x, y, rot=0, rx=-1, ry=-1, anchor=None, size=10, color="black", weight="normal", desc=None, flip=False, id=None) :
         f = self.imgFileTmp
         if (flip == True):
             f.write('<text x="0" y="0" transform="matrix(-1 0 0 1 ' + str(x) + ' ' + str(y) + ')" ')
@@ -56,6 +56,8 @@ class BoxScore :
         f.write(' style="font-family:Arial; font-size: ' + str(size) + 'pt; font-weight:' + weight +';"')
         if desc != None:
             f.write(' xlink:title="' + desc + '"')
+        if id != None:
+            f.write(' id="' + id + '"')
         f.write('>' + txt + '</text>\n')
 
     def writeCircle(self, x, y, r) :
@@ -145,21 +147,21 @@ class BoxScore :
         for i in range(0, len(homePitchers)-1):
             y = (homePitchers[i][1] + homePitchers[i+1][1])/2
             if i == 0:
-                self.writeText(str(homePitchers[i][0]), x-5, y+1, rot=90, anchor="middle")
+                self.writeText(str(homePitchers[i][0]), x-5, y+1, rot=90, anchor="middle", id="homeP"+str(i+1))
             else:
-                self.writeText(str(homePitchers[i][0]), x-5, y+2, rot=90, anchor="middle")
+                self.writeText(str(homePitchers[i][0]), x-5, y+2, rot=90, anchor="middle", id="homeP"+str(i+1))
         y = (homePitchers[-1][1] + self.awayY+h)/2
-        self.writeText(str(homePitchers[-1][0]), x-5, y+1, rot=90, anchor="middle")            
+        self.writeText(str(homePitchers[-1][0]), x-5, y+1, rot=90, anchor="middle", id="homeP"+str(len(homePitchers)))            
 
         x = self.homeX - self.boxWidth - self.pitcherBuf
         for i in range(0, len(awayPitchers)-1):
             y = (awayPitchers[i][1] + awayPitchers[i+1][1])/2
             if i == 0:
-                self.writeText(str(awayPitchers[i][0]), x+5, y+1, rot=270, anchor="middle")
+                self.writeText(str(awayPitchers[i][0]), x+5, y+1, rot=270, anchor="middle", id="awayP"+str(i+1))
             else:
-                self.writeText(str(awayPitchers[i][0]), x+5, y+2, rot=270, anchor="middle")
+                self.writeText(str(awayPitchers[i][0]), x+5, y+2, rot=270, anchor="middle", id="awayP"+str(i+1))
         y = (awayPitchers[-1][1] + self.homeY+h)/2
-        self.writeText(str(awayPitchers[-1][0]), x+5, y+1, rot=270, anchor="middle")      
+        self.writeText(str(awayPitchers[-1][0]), x+5, y+1, rot=270, anchor="middle", id="awayP"+str(len(awayPitchers)))      
 
         f.write('</svg>\n')
 
@@ -171,9 +173,37 @@ class BoxScore :
 "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 
 <svg width="''' + str(self.homeX) + '" height="' + str(h + 2*self.boxBuffer) + '''" version="1.1"
-xmlns="http://www.w3.org/2000/svg" xmlns:xlink='http://www.w3.org/1999/xlink'>
+xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" onload="init(evt)">
 ''')
         img.write('\n\n')
+        
+        img.write('''<script type="text/ecmascript"><![CDATA[
+function init(evt) {''')
+
+        img.write('var myArray = new Array();\n')
+        img.write('for (i=1; i<='+str(len(homePitchers))+'; i++) {\n')
+        img.write('''
+    myText = document.getElementById("homeP"+i)
+    myText.setAttribute("fill","red")
+    textLength = myText.getComputedTextLength();
+    myArray[i-1] = textLength
+    bbox = myText.getBBox();
+    alert("homeP"+i+" is " + textLength + " pixels wide\\nx=" + bbox.x + " y=" + bbox.y + " height=" + bbox.height)
+}''')
+        img.write('\n\n')
+        
+        #For each pitcher, compare text width and space between the hashes
+        for i in range(0, len(homePitchers)):
+            if i != (len(homePitchers)-1):
+                hashwidth = homePitchers[i+1][1] - homePitchers[i][1]
+                y = (homePitchers[i][1] + homePitchers[i+1][1])/2
+            else:
+                hashwidth = (self.awayY + h) - homePitchers[i][1]
+                y = (homePitchers[-1][1] + self.awayY+h)/2
+            img.write('if (myArray['+str(i)+'] >= '+str(hashwidth)+'){\n    myText = document.getElementById("homeP'+str(i+1)+'")\n    myText.setAttribute("y",'+str(y)+'-10);\n}\n')
+
+        img.write('}\n]]></script>')
+
         # Then we back up to the start of the tempfile and write it's contents to the image file
         f.seek(0)
         img.write(f.read())
