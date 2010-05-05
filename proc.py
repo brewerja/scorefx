@@ -299,10 +299,11 @@ class procMLB(saxutils.handler.ContentHandler):
         elif word == "hits" :
             mtch = re.search("ground-rule double", action)
             if mtch:
+                action = action.split('.')[0]
                 mtch = re.search("ground-rule double .* on a (\w*) .*? to (\w*)", action)
                 if mtch:
-                    play = plays[mtch.group(1)] + positions[mtch.group(2)]
-                    result = const.HIT
+                    play_tmp = plays[mtch.group(1)] + positions[mtch.group(2)]
+                    result_tmp = const.HIT
                 mtch = re.search("ground-rule double .* on a (\w*) .*? down the (\w*)", action)
                 if mtch:
                     play = plays[mtch.group(1)] + positions[mtch.group(2)]
