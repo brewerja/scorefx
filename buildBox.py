@@ -245,9 +245,12 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" on
         img.write('            // Create bottom or right line.\n')
         img.write('            bottomLine = document.createElementNS(svg,"line")\n')
         img.write('            bottomLine.setAttribute("x1",'+str(x)+')\n')
-        img.write('            bottomLine.setAttribute("y1", cY2+10)\n')
+        img.write('            bottomLine.setAttribute("y1", cY2+10)\n')       
         img.write('            bottomLine.setAttribute("x2",'+str(x)+')\n')
-        img.write('            bottomLine.setAttribute("y2", yHash[i+1]+2)\n\n')
+        img.write('            if (i=='+str(len(homePitchers)-1)+')\n')
+        img.write('                bottomLine.setAttribute("y2", '+str(self.awayY+h)+')\n')
+        img.write('            else\n')
+        img.write('                bottomLine.setAttribute("y2", yHash[i+1]+2)\n\n') 
          
         img.write('            // Add both lines to the SVG document.\n')       
         img.write('            hash = document.getElementById("hashMarks")\n')
@@ -258,34 +261,37 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" on
         
         img.write('''
     // Correct any overlapping pitchers names
+    nextLevel = []
+    nextLevelWidths = []
     while (curLevel.length > 0) {
+        //alert("curLevel.length="+curLevel.length)
         // Copy arrays, to create active or final versions.
         curLevel_f = curLevel.slice(0);
-        curLevelWidths_f = curLevelWidths.slice(0);    
+        curLevelWidths_f = curLevelWidths.slice(0);  
+        r=0 // Number of names promoted to the next level.
         // Check for overlapping names in curLevel, skip first name.
         for (i=1; i<curLevel.length; i++){
             currentP = document.getElementById(curLevel[i])
-            cY1 = currentP.getAttribute("y") - .5*curLevelWidths[i]
+            cY1 = parseFloat(currentP.getAttribute("y")) - .5*curLevelWidths[i]
             // Check only prior pitchers in curLevel for overlap.
-            for (j=0; j<i; j++){
+            for (j=0; j<i-r; j++){               
                 otherP = document.getElementById(curLevel_f[j])
-                oY2 = otherP.getAttribute("y") + .5*curLevelWidths_f[j];
+                oY2 = parseFloat(otherP.getAttribute("y")) + .5*curLevelWidths_f[j];
                 // Does the left side of the name overlap the right side of the other name?
                 if (cY1 <= oY2){
                     // If it does, physically move the name up a level.
                     y = currentP.getAttribute("y")
                     currentP.setAttribute("y", y-10)
                     // Then remove it from current level array and add to the next level array.
-                    nextLevel.push(curLevel_f.splice(i,1))
-                    nextLevelWidths.push(curLevelWidths_f.splice(i,1))
-                    break;                
+                    nextLevel.push(curLevel_f.splice(i-r,1))
+                    r++
                 }
             }
         }
-        curLevel = nextLevel
-        curLevel_Widths = nextLevelWidths
-    }
-''')
+        curLevel = nextLevel.slice(0)
+        curLevel_Widths = nextLevelWidths.slice(0)
+        nextLevel = []; nextLevelWidths = []
+    }\n''')
 
         img.write('}\n]]></script>')
 
