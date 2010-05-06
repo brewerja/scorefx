@@ -142,26 +142,27 @@ class BoxScore :
         
         f.write('</g>\n')  
         
-        # Draw in the names of the pitchers
+        # Draw in the names of the pitchers, homePitchers first
         x = self.awayX + self.boxWidth + self.pitcherBuf
         for i in range(0, len(homePitchers)-1):
             y = (homePitchers[i][1] + homePitchers[i+1][1])/2
             if i == 0:
-                self.writeText(str(homePitchers[i][0]), x-5, y+1, rot=90, anchor="middle", id="homeP"+str(i+1))
+                self.writeText(str(homePitchers[i][0]), x-5, y+1, rot=90, anchor="middle", id="homeP"+str(i))
             else:
-                self.writeText(str(homePitchers[i][0]), x-5, y+2, rot=90, anchor="middle", id="homeP"+str(i+1))
+                self.writeText(str(homePitchers[i][0]), x-5, y+2, rot=90, anchor="middle", id="homeP"+str(i))
         y = (homePitchers[-1][1] + self.awayY+h)/2
-        self.writeText(str(homePitchers[-1][0]), x-5, y+1, rot=90, anchor="middle", id="homeP"+str(len(homePitchers)))            
+        self.writeText(str(homePitchers[-1][0]), x-5, y+1, rot=90, anchor="middle", id="homeP"+str(len(homePitchers)-1))            
 
+        # awayPitchers second
         x = self.homeX - self.boxWidth - self.pitcherBuf
         for i in range(0, len(awayPitchers)-1):
             y = (awayPitchers[i][1] + awayPitchers[i+1][1])/2
             if i == 0:
-                self.writeText(str(awayPitchers[i][0]), x+5, y+1, rot=270, anchor="middle", id="awayP"+str(i+1))
+                self.writeText(str(awayPitchers[i][0]), x+5, y+1, rot=270, anchor="middle", id="awayP"+str(i))
             else:
-                self.writeText(str(awayPitchers[i][0]), x+5, y+2, rot=270, anchor="middle", id="awayP"+str(i+1))
+                self.writeText(str(awayPitchers[i][0]), x+5, y+2, rot=270, anchor="middle", id="awayP"+str(i))
         y = (awayPitchers[-1][1] + self.homeY+h)/2
-        self.writeText(str(awayPitchers[-1][0]), x+5, y+1, rot=270, anchor="middle", id="awayP"+str(len(awayPitchers)))      
+        self.writeText(str(awayPitchers[-1][0]), x+5, y+1, rot=270, anchor="middle", id="awayP"+str(len(awayPitchers)-1))      
 
         f.write('</svg>\n')
 
@@ -179,105 +180,111 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" on
         
         # Begin the JavaScript portion of the file
         img.write('<script type="text/ecmascript"><![CDATA[\n')
-        img.write('function init(evt) {\n')
-        img.write('    var myArray = new Array();\n')
-        img.write('    for (i=1; i<='+str(len(homePitchers))+'; i++) {\n')
-        img.write('''
-        myText = document.getElementById("homeP"+i)
-        myText.setAttribute("fill","red")
-        textLength = myText.getComputedTextLength();
-        myArray[i-1] = textLength
-        bbox = myText.getBBox();
-    }''')
-        img.write('\n\n')
-        
-        # For each pitcher, compare text width and space between the hashes
+        # Create the initialization function
+        img.write('function init(evt) {\n\n')
+        img.write('    // Store the widths of each pitcher\'s name\n')
+        img.write('    nameWidths = new Array()\n')
+        img.write('    for (i=0; i<'+str(len(homePitchers))+'; i++) {\n')
+        img.write('        pText = document.getElementById("homeP"+(i))\n')
+        img.write('        nameWidths[i] = pText.getComputedTextLength()\n')
+        img.write('        //pText.setAttribute("fill","red")\n')        
+        img.write('    }\n\n')
+
+        # Create explicit arrays to move data from Python to JS.
         storeString1 = '    hashWidths = ['
-        storeString2 = '    yArray = ['
+        storeString2 = '    yName = ['
         storeString3 = '    yHash = ['
         for i in range(0, len(homePitchers)):
             if i != (len(homePitchers)-1):
                 hashwidth = homePitchers[i+1][1] - homePitchers[i][1]
                 y = (homePitchers[i][1] + homePitchers[i+1][1])/2
-                storeString1 = storeString1 + str(hashwidth) + ', '
-                storeString2 = storeString2 + str(y) + ', '
-                storeString3 = storeString3 + str(homePitchers[i][1]) + ', '
+                postfix = ', '
             else:
                 hashwidth = (self.awayY + h) - homePitchers[i][1]
                 y = (homePitchers[-1][1] + self.awayY+h)/2
-                storeString1 = storeString1 + str(hashwidth) + '];\n'
-                storeString2 = storeString2 + str(y) + '];\n'
-                storeString3 = storeString3 + str(homePitchers[i][1]) + '];\n'
+                postfix = ']\n'
+            storeString1 = storeString1 + str(hashwidth) + postfix
+            storeString2 = storeString2 + str(y) + postfix
+            storeString3 = storeString3 + str(homePitchers[i][1]) + postfix
+        img.write('    // Create explicit arrays to move data from Python to JS.\n')
         img.write(storeString1)
         img.write(storeString2)
         img.write(storeString3)
-        img.write('    var level2 = new Array();\n')
-        img.write('    var level2Widths = new Array();\n')
-        img.write('    for (i=1; i<='+str(len(homePitchers))+'; i++){\n')
-        img.write('        if (myArray[i-1]+5 >= hashWidths[i-1]) {\n')
-        img.write('            myText = document.getElementById("homeP"+i)\n')
-        img.write('            myText.setAttribute("y", yArray[i-1]-10)\n')
-        img.write('            level2.push("homeP"+i);\n')
-        img.write('            level2Widths.push(myArray[i-1]);\n        }\n')
-        img.write('        else if (myArray[i-1]+75 < hashWidths[i-1]){\n')
+        img.write('    curLevel = new Array()\n')
+        img.write('    curLevelWidths = new Array()\n\n')
+        
+        img.write('    // For each pitcher, compare name width and space between the hashes.\n')        
+        img.write('    for (i=0; i<'+str(len(homePitchers))+'; i++){\n\n')
+        img.write('        // If the name is too long, move it up a level\n')        
+        img.write('        if (nameWidths[i]+5 >= hashWidths[i]) {\n')
+        img.write('            pText = document.getElementById("homeP"+i)\n')
+        img.write('            pText.setAttribute("y", yName[i]-10)\n')
+        img.write('            curLevel.push("homeP"+i)\n')
+        img.write('            curLevelWidths.push(nameWidths[i])\n        }\n\n')
+        img.write('        // Otherwise, check to see if the pitcher was in the game a long time.\n')
+        img.write('        else if (nameWidths[i]+75 < hashWidths[i]) {\n')
         
         x = self.awayX + self.boxWidth + self.pitcherBuf
         
-        img.write('            //draw lines\n')
+        img.write('            // If he was, draw lines from the top hash to the name and from the bottom.\n')
         img.write('            currentP = document.getElementById("homeP"+i)\n')
-        img.write('            cY1 = currentP.getAttribute("y") - .5*myArray[i-1]\n')
-        img.write('            cY2 = cY1 + myArray[i-1]\n')
-        img.write('            svg="http://www.w3.org/2000/svg"\n')
-        img.write('            var topLine = document.createElementNS(svg,"line");\n')
-        img.write('            topLine.setAttribute("x1",'+str(x)+');\n')
-        img.write('            if (i==1)\n')
-        img.write('                topLine.setAttribute("y1", yHash[i-1]);\n')
+        img.write('            cY1 = currentP.getAttribute("y") - .5*nameWidths[i]\n')
+        img.write('            cY2 = cY1 + nameWidths[i]\n')
+        img.write('            svg="http://www.w3.org/2000/svg"\n\n')
+        
+        img.write('            // Create top or left line.\n')
+        img.write('            topLine = document.createElementNS(svg,"line")\n')
+        img.write('            topLine.setAttribute("x1",'+str(x)+')\n')
+        img.write('            if (i==0)\n')
+        img.write('                topLine.setAttribute("y1", yHash[i])\n')
         img.write('            else\n')
-        img.write('                topLine.setAttribute("y1", yHash[i-1]+2);\n')
-        img.write('            topLine.setAttribute("x2",'+str(x)+');\n')
-        img.write('            topLine.setAttribute("y2", cY1-10);\n')
-        img.write('            var bottomLine = document.createElementNS(svg,"line");\n')
-        img.write('            bottomLine.setAttribute("x1",'+str(x)+');\n')
-        img.write('            bottomLine.setAttribute("y1", cY2+10);\n')
-        img.write('            bottomLine.setAttribute("x2",'+str(x)+');\n')
-        img.write('            bottomLine.setAttribute("y2", yHash[i]+2);\n')        
-        img.write('            var hash = document.getElementById("hashMarks");\n')
-        img.write('            hash.appendChild(topLine);\n')
-        img.write('            hash.appendChild(bottomLine);\n')
-        img.write('            //alert("DRAW LINES")\n')
+        img.write('                topLine.setAttribute("y1", yHash[i]+2)\n')
+        img.write('            topLine.setAttribute("x2",'+str(x)+')\n')
+        img.write('            topLine.setAttribute("y2", cY1-10)\n\n')
+        
+        img.write('            // Create bottom or right line.\n')
+        img.write('            bottomLine = document.createElementNS(svg,"line")\n')
+        img.write('            bottomLine.setAttribute("x1",'+str(x)+')\n')
+        img.write('            bottomLine.setAttribute("y1", cY2+10)\n')
+        img.write('            bottomLine.setAttribute("x2",'+str(x)+')\n')
+        img.write('            bottomLine.setAttribute("y2", yHash[i+1]+2)\n\n')
+         
+        img.write('            // Add both lines to the SVG document.\n')       
+        img.write('            hash = document.getElementById("hashMarks")\n')
+        img.write('            hash.appendChild(topLine)\n')
+        img.write('            hash.appendChild(bottomLine)\n')
         img.write('        }\n')
         img.write('    }\n')   
         
         img.write('''
-    //alert("level2Array:"+level2+"\\n"+"level2Widths:"+level2Widths)
-
-    //Copy arrays so that we can remove from these without screwing up the outer 'for' loop
-    level2_f = level2.slice(0);
-    level2Widths_f = level2Widths.slice(0);
-    
-    //Skip first element
-    for (i=1; i<level2.length; i++){
-        currentP = document.getElementById(level2[i])
-        cY1 = currentP.getAttribute("y") - .5*level2Widths[i]
-        cY2 = cY1 + level2Widths[i]
-        // Check all prior pitchers in level2 for conflicts
-        for (j=0; j<i; j++){
-            otherP = document.getElementById(level2_f[j])
-            oY1 = otherP.getAttribute("y") - .5*level2Widths_f[j];
-            oY2 = oY1 + level2Widths_f[j];
-            if (oY1 <= cY1 && cY1 <= oY2){
-                //alert("HAVE CONFLICT\\n"+level2_f[i]+": "+cY1+", "+cY2+"\\n"+level2_f[j]+": "+oY1+", "+oY2)
-                //have conflict
-                y = currentP.getAttribute("y")
-                currentP.setAttribute("y", y-10)
-                level2_f.splice(i,1)
-                level2Widths_f.splice(i,1)
-                break;                
+    // Correct any overlapping pitchers names
+    while (curLevel.length > 0) {
+        // Copy arrays, to create active or final versions.
+        curLevel_f = curLevel.slice(0);
+        curLevelWidths_f = curLevelWidths.slice(0);    
+        // Check for overlapping names in curLevel, skip first name.
+        for (i=1; i<curLevel.length; i++){
+            currentP = document.getElementById(curLevel[i])
+            cY1 = currentP.getAttribute("y") - .5*curLevelWidths[i]
+            // Check only prior pitchers in curLevel for overlap.
+            for (j=0; j<i; j++){
+                otherP = document.getElementById(curLevel_f[j])
+                oY2 = otherP.getAttribute("y") + .5*curLevelWidths_f[j];
+                // Does the left side of the name overlap the right side of the other name?
+                if (cY1 <= oY2){
+                    // If it does, physically move the name up a level.
+                    y = currentP.getAttribute("y")
+                    currentP.setAttribute("y", y-10)
+                    // Then remove it from current level array and add to the next level array.
+                    nextLevel.push(curLevel_f.splice(i,1))
+                    nextLevelWidths.push(curLevelWidths_f.splice(i,1))
+                    break;                
+                }
             }
         }
+        curLevel = nextLevel
+        curLevel_Widths = nextLevelWidths
     }
-
-    //alert("MADE IT HERE")
 ''')
 
         img.write('}\n]]></script>')
