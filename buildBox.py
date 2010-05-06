@@ -120,7 +120,7 @@ class BoxScore :
         f.write('</g>\n\n')
         
         # Draw Pitchers
-        f.write('<g stroke="black">\n')
+        f.write('<g id="hashMarks" stroke="black">\n')
         
         # Draw away side hash marks
         x = self.awayX + self.boxWidth + self.pitcherBuf       
@@ -177,30 +177,108 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" on
 ''')
         img.write('\n\n')
         
-        img.write('''<script type="text/ecmascript"><![CDATA[
-function init(evt) {''')
-
-        img.write('var myArray = new Array();\n')
-        img.write('for (i=1; i<='+str(len(homePitchers))+'; i++) {\n')
+        # Begin the JavaScript portion of the file
+        img.write('<script type="text/ecmascript"><![CDATA[\n')
+        img.write('function init(evt) {\n')
+        img.write('    var myArray = new Array();\n')
+        img.write('    for (i=1; i<='+str(len(homePitchers))+'; i++) {\n')
         img.write('''
-    myText = document.getElementById("homeP"+i)
-    myText.setAttribute("fill","red")
-    textLength = myText.getComputedTextLength();
-    myArray[i-1] = textLength
-    bbox = myText.getBBox();
-    alert("homeP"+i+" is " + textLength + " pixels wide\\nx=" + bbox.x + " y=" + bbox.y + " height=" + bbox.height)
-}''')
+        myText = document.getElementById("homeP"+i)
+        myText.setAttribute("fill","red")
+        textLength = myText.getComputedTextLength();
+        myArray[i-1] = textLength
+        bbox = myText.getBBox();
+    }''')
         img.write('\n\n')
         
-        #For each pitcher, compare text width and space between the hashes
+        # For each pitcher, compare text width and space between the hashes
+        storeString1 = '    hashWidths = ['
+        storeString2 = '    yArray = ['
+        storeString3 = '    yHash = ['
         for i in range(0, len(homePitchers)):
             if i != (len(homePitchers)-1):
                 hashwidth = homePitchers[i+1][1] - homePitchers[i][1]
                 y = (homePitchers[i][1] + homePitchers[i+1][1])/2
+                storeString1 = storeString1 + str(hashwidth) + ', '
+                storeString2 = storeString2 + str(y) + ', '
+                storeString3 = storeString3 + str(homePitchers[i][1]) + ', '
             else:
                 hashwidth = (self.awayY + h) - homePitchers[i][1]
                 y = (homePitchers[-1][1] + self.awayY+h)/2
-            img.write('if (myArray['+str(i)+'] >= '+str(hashwidth)+'){\n    myText = document.getElementById("homeP'+str(i+1)+'")\n    myText.setAttribute("y",'+str(y)+'-10);\n}\n')
+                storeString1 = storeString1 + str(hashwidth) + '];\n'
+                storeString2 = storeString2 + str(y) + '];\n'
+                storeString3 = storeString3 + str(homePitchers[i][1]) + '];\n'
+        img.write(storeString1)
+        img.write(storeString2)
+        img.write(storeString3)
+        img.write('    var level2 = new Array();\n')
+        img.write('    var level2Widths = new Array();\n')
+        img.write('    for (i=1; i<='+str(len(homePitchers))+'; i++){\n')
+        img.write('        if (myArray[i-1]+5 >= hashWidths[i-1]) {\n')
+        img.write('            myText = document.getElementById("homeP"+i)\n')
+        img.write('            myText.setAttribute("y", yArray[i-1]-10)\n')
+        img.write('            level2.push("homeP"+i);\n')
+        img.write('            level2Widths.push(myArray[i-1]);\n        }\n')
+        img.write('        else if (myArray[i-1]+75 < hashWidths[i-1]){\n')
+        
+        x = self.awayX + self.boxWidth + self.pitcherBuf
+        
+        img.write('            //draw lines\n')
+        img.write('            currentP = document.getElementById("homeP"+i)\n')
+        img.write('            cY1 = currentP.getAttribute("y") - .5*myArray[i-1]\n')
+        img.write('            cY2 = cY1 + myArray[i-1]\n')
+        img.write('            svg="http://www.w3.org/2000/svg"\n')
+        img.write('            var topLine = document.createElementNS(svg,"line");\n')
+        img.write('            topLine.setAttribute("x1",'+str(x)+');\n')
+        img.write('            if (i==1)\n')
+        img.write('                topLine.setAttribute("y1", yHash[i-1]);\n')
+        img.write('            else\n')
+        img.write('                topLine.setAttribute("y1", yHash[i-1]+2);\n')
+        img.write('            topLine.setAttribute("x2",'+str(x)+');\n')
+        img.write('            topLine.setAttribute("y2", cY1-10);\n')
+        img.write('            var bottomLine = document.createElementNS(svg,"line");\n')
+        img.write('            bottomLine.setAttribute("x1",'+str(x)+');\n')
+        img.write('            bottomLine.setAttribute("y1", cY2+10);\n')
+        img.write('            bottomLine.setAttribute("x2",'+str(x)+');\n')
+        img.write('            bottomLine.setAttribute("y2", yHash[i]+2);\n')        
+        img.write('            var hash = document.getElementById("hashMarks");\n')
+        img.write('            hash.appendChild(topLine);\n')
+        img.write('            hash.appendChild(bottomLine);\n')
+        img.write('            //alert("DRAW LINES")\n')
+        img.write('        }\n')
+        img.write('    }\n')   
+        
+        img.write('''
+    //alert("level2Array:"+level2+"\\n"+"level2Widths:"+level2Widths)
+
+    //Copy arrays so that we can remove from these without screwing up the outer 'for' loop
+    level2_f = level2.slice(0);
+    level2Widths_f = level2Widths.slice(0);
+    
+    //Skip first element
+    for (i=1; i<level2.length; i++){
+        currentP = document.getElementById(level2[i])
+        cY1 = currentP.getAttribute("y") - .5*level2Widths[i]
+        cY2 = cY1 + level2Widths[i]
+        // Check all prior pitchers in level2 for conflicts
+        for (j=0; j<i; j++){
+            otherP = document.getElementById(level2_f[j])
+            oY1 = otherP.getAttribute("y") - .5*level2Widths_f[j];
+            oY2 = oY1 + level2Widths_f[j];
+            if (oY1 <= cY1 && cY1 <= oY2){
+                //alert("HAVE CONFLICT\\n"+level2_f[i]+": "+cY1+", "+cY2+"\\n"+level2_f[j]+": "+oY1+", "+oY2)
+                //have conflict
+                y = currentP.getAttribute("y")
+                currentP.setAttribute("y", y-10)
+                level2_f.splice(i,1)
+                level2Widths_f.splice(i,1)
+                break;                
+            }
+        }
+    }
+
+    //alert("MADE IT HERE")
+''')
 
         img.write('}\n]]></script>')
 
