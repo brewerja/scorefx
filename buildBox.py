@@ -183,17 +183,23 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" on
         # Create the initialization function
         img.write('function init(evt) {\n\n')
         img.write('    // Store the widths of each pitcher\'s name\n')
-        img.write('    nameWidths = new Array()\n')
+        img.write('    h_nameWidths = new Array()\n')
         img.write('    for (i=0; i<'+str(len(homePitchers))+'; i++) {\n')
         img.write('        pText = document.getElementById("homeP"+(i))\n')
-        img.write('        nameWidths[i] = pText.getComputedTextLength()\n')
+        img.write('        h_nameWidths[i] = pText.getComputedTextLength()\n')
         img.write('        //pText.setAttribute("fill","red")\n')        
         img.write('    }\n\n')
+        img.write('    a_nameWidths = new Array()\n')
+        img.write('    for (i=0; i<'+str(len(awayPitchers))+'; i++) {\n')
+        img.write('        pText = document.getElementById("awayP"+(i))\n')
+        img.write('        a_nameWidths[i] = pText.getComputedTextLength()\n')
+        img.write('        //pText.setAttribute("fill","red")\n')        
+        img.write('    }\n\n')        
 
         # Create explicit arrays to move data from Python to JS.
-        storeString1 = '    hashWidths = ['
-        storeString2 = '    yName = ['
-        storeString3 = '    yHash = ['
+        storeString1 = '    h_hashWidths = ['
+        storeString2 = '    h_yName = ['
+        storeString3 = '    h_yHash = ['
         for i in range(0, len(homePitchers)):
             if i != (len(homePitchers)-1):
                 hashwidth = homePitchers[i+1][1] - homePitchers[i][1]
@@ -206,49 +212,70 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" on
             storeString1 = storeString1 + str(hashwidth) + postfix
             storeString2 = storeString2 + str(y) + postfix
             storeString3 = storeString3 + str(homePitchers[i][1]) + postfix
+        storeString4 = '    a_hashWidths = ['
+        storeString5 = '    a_yName = ['
+        storeString6 = '    a_yHash = ['
+        for i in range(0, len(awayPitchers)):
+            if i != (len(awayPitchers)-1):
+                hashwidth = awayPitchers[i+1][1] - awayPitchers[i][1]
+                y = (awayPitchers[i][1] + awayPitchers[i+1][1])/2
+                postfix = ', '
+            else:
+                hashwidth = (self.awayY + h) - awayPitchers[i][1]
+                y = (awayPitchers[-1][1] + self.awayY+h)/2
+                postfix = ']\n'
+            storeString4 = storeString4 + str(hashwidth) + postfix
+            storeString5 = storeString5 + str(y) + postfix
+            storeString6 = storeString6 + str(awayPitchers[i][1]) + postfix
         img.write('    // Create explicit arrays to move data from Python to JS.\n')
         img.write(storeString1)
         img.write(storeString2)
-        img.write(storeString3)
+        img.write(storeString3)            
+        img.write(storeString4)
+        img.write(storeString5)
+        img.write(storeString6)
+        
+        img.write('\n    drawPitchers(h_nameWidths, h_hashWidths, h_yName, h_yHash, '+str(len(homePitchers))+', "homeP", '+str(self.awayX + self.boxWidth + self.pitcherBuf)+', '+str(self.awayY+h)+')')
+        img.write('\n    drawPitchers(a_nameWidths, a_hashWidths, a_yName, a_yHash, '+str(len(awayPitchers))+', "awayP", '+str(self.homeX - self.boxWidth - self.pitcherBuf)+', '+str(self.homeY+h)+')\n')        
+        img.write('}\n\n')
+        
+        img.write('function drawPitchers(nameWidths, hashWidths, yName, yHash, numP, tagPrefix, xLoc, yBottom){\n')
         img.write('    curLevel = new Array()\n')
         img.write('    curLevelWidths = new Array()\n\n')
         
         img.write('    // For each pitcher, compare name width and space between the hashes.\n')        
-        img.write('    for (i=0; i<'+str(len(homePitchers))+'; i++){\n\n')
+        img.write('    for (i=0; i<numP; i++){\n\n')
         img.write('        // If the name is too long, move it up a level\n')        
         img.write('        if (nameWidths[i]+5 >= hashWidths[i]) {\n')
-        img.write('            pText = document.getElementById("homeP"+i)\n')
+        img.write('            pText = document.getElementById(tagPrefix+i)\n')
         img.write('            pText.setAttribute("y", yName[i]-10)\n')
-        img.write('            curLevel.push("homeP"+i)\n')
+        img.write('            curLevel.push(tagPrefix+i)\n')
         img.write('            curLevelWidths.push(nameWidths[i])\n        }\n\n')
         img.write('        // Otherwise, check to see if the pitcher was in the game a long time.\n')
         img.write('        else if (nameWidths[i]+75 < hashWidths[i]) {\n')
-        
-        x = self.awayX + self.boxWidth + self.pitcherBuf
-        
         img.write('            // If he was, draw lines from the top hash to the name and from the bottom.\n')
-        img.write('            currentP = document.getElementById("homeP"+i)\n')
+        img.write('            currentP = document.getElementById(tagPrefix+i)\n')
         img.write('            cY1 = currentP.getAttribute("y") - .5*nameWidths[i]\n')
         img.write('            cY2 = cY1 + nameWidths[i]\n')
         img.write('            svg="http://www.w3.org/2000/svg"\n\n')
         
         img.write('            // Create top or left line.\n')
         img.write('            topLine = document.createElementNS(svg,"line")\n')
-        img.write('            topLine.setAttribute("x1",'+str(x)+')\n')
+        img.write('            topLine.setAttribute("x1", xLoc)\n')
         img.write('            if (i==0)\n')
         img.write('                topLine.setAttribute("y1", yHash[i])\n')
         img.write('            else\n')
         img.write('                topLine.setAttribute("y1", yHash[i]+2)\n')
-        img.write('            topLine.setAttribute("x2",'+str(x)+')\n')
+        img.write('            topLine.setAttribute("x2", xLoc)\n')
         img.write('            topLine.setAttribute("y2", cY1-10)\n\n')
         
         img.write('            // Create bottom or right line.\n')
         img.write('            bottomLine = document.createElementNS(svg,"line")\n')
-        img.write('            bottomLine.setAttribute("x1",'+str(x)+')\n')
+        img.write('            bottomLine.setAttribute("x1", xLoc)\n')
         img.write('            bottomLine.setAttribute("y1", cY2+10)\n')       
-        img.write('            bottomLine.setAttribute("x2",'+str(x)+')\n')
-        img.write('            if (i=='+str(len(homePitchers)-1)+')\n')
-        img.write('                bottomLine.setAttribute("y2", '+str(self.awayY+h)+')\n')
+        img.write('            bottomLine.setAttribute("x2", xLoc)\n')
+        img.write('            if (i==numP-1)\n')
+        img.write('                bottomLine.setAttribute("y2", yBottom)\n')
         img.write('            else\n')
         img.write('                bottomLine.setAttribute("y2", yHash[i+1]+2)\n\n') 
          
@@ -267,14 +294,13 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" on
         //alert("curLevel.length="+curLevel.length)
         // Copy arrays, to create active or final versions.
         curLevel_f = curLevel.slice(0);
-        curLevelWidths_f = curLevelWidths.slice(0);  
-        r=0 // Number of names promoted to the next level.
+        curLevelWidths_f = curLevelWidths.slice(0);
         // Check for overlapping names in curLevel, skip first name.
         for (i=1; i<curLevel.length; i++){
             currentP = document.getElementById(curLevel[i])
             cY1 = parseFloat(currentP.getAttribute("y")) - .5*curLevelWidths[i]
             // Check only prior pitchers in curLevel for overlap.
-            for (j=0; j<i-r; j++){               
+            for (j=0; j<i-nextLevel.length; j++){               
                 otherP = document.getElementById(curLevel_f[j])
                 oY2 = parseFloat(otherP.getAttribute("y")) + .5*curLevelWidths_f[j];
                 // Does the left side of the name overlap the right side of the other name?
@@ -283,8 +309,7 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" on
                     y = currentP.getAttribute("y")
                     currentP.setAttribute("y", y-10)
                     // Then remove it from current level array and add to the next level array.
-                    nextLevel.push(curLevel_f.splice(i-r,1))
-                    r++
+                    nextLevel.push(curLevel_f.splice(i-nextLevel.length,1))
                 }
             }
         }
@@ -293,7 +318,7 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" on
         nextLevel = []; nextLevelWidths = []
     }\n''')
 
-        img.write('}\n]]></script>')
+        img.write('}\n]]></script>\n\n')
 
         # Then we back up to the start of the tempfile and write it's contents to the image file
         f.seek(0)
