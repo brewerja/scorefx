@@ -1,7 +1,11 @@
 <html>
+<head>
+ <title>Allen Scorecard Creator</title>
+</head>
 <body>
+
 <form action="/choosegame" method="get">
- <select name="month">
+ <select id="month" name="month">
   <option value="01">1</option>
   <option value="02">2</option>
   <option value="03">3</option>
@@ -15,7 +19,7 @@
   <option value="11">11</option>
   <option value="12">12</option>
  </select>
- <select name="day">
+ <select id="day" name="day">
   <option value="01">1</option>
   <option value="02">2</option>
   <option value="03">3</option>
@@ -48,12 +52,35 @@
   <option value="30">30</option>
   <option value="31">31</option>
  </select>
- <select name="year">
+ <select id="year" name="year">
   <option value="2008">2008</option>
   <option value="2009">2009</option>
   <option value="2010">2010</option>
  </select>
  <button type="submit">Submit</button>
-</form
+</form>
+
+<script type="text/javascript">
+<!--
+currentTime = new Date()
+month = currentTime.getMonth() + 1
+day = currentTime.getDate()
+year = currentTime.getFullYear()
+monthNode = document.getElementById("month")
+dayNode = document.getElementById("day")
+yearNode = document.getElementById("year")
+
+if (month < 10)
+    monthNode.value = "0" + month
+else
+    monthNode.value = month
+if (day < 10)
+    dayNode.value = "0" + day
+else
+    dayNode.value = day
+yearNode.value = year
+//-->
+</script>
+
 </body>
 </html>

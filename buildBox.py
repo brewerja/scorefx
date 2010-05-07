@@ -173,7 +173,7 @@ class BoxScore :
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
 "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 
-<svg width="''' + str(self.homeX) + '" height="' + str(h + 2*self.boxBuffer) + '''" version="1.1"
+<svg width="''' + str(self.homeX+1) + '" height="' + str(h + 2*self.boxBuffer) + '''" version="1.1"
 xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" onload="init(evt)">
 ''')
         img.write('\n\n')
@@ -235,6 +235,7 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" on
         img.write('}\n\n')
         
         img.write('function drawPitchers(nameWidths, hashWidths, yName, yHash, numP, tagPrefix, xLoc, yBottom){\n')
+        img.write('    levelHeight = 12\n')
         img.write('    curLevel = new Array()\n')
         img.write('    curLevelWidths = new Array()\n\n')
         
@@ -243,11 +244,11 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" on
         img.write('        // If the name is too long, move it up a level\n')        
         img.write('        if (nameWidths[i]+5 >= hashWidths[i]) {\n')
         img.write('            pText = document.getElementById(tagPrefix+i)\n')
-        img.write('            pText.setAttribute("y", yName[i]-10)\n')
+        img.write('            pText.setAttribute("y", yName[i]-levelHeight)\n')
         img.write('            curLevel.push(tagPrefix+i)\n')
         img.write('            curLevelWidths.push(nameWidths[i])\n        }\n\n')
         img.write('        // Otherwise, check to see if the pitcher was in the game a long time.\n')
-        img.write('        else if (nameWidths[i]+75 < hashWidths[i]) {\n')
+        img.write('        else if (nameWidths[i]+70 < hashWidths[i]) {\n')
         img.write('            // If he was, draw lines from the top hash to the name and from the bottom.\n')
         img.write('            currentP = document.getElementById(tagPrefix+i)\n')
         img.write('            cY1 = currentP.getAttribute("y") - .5*nameWidths[i]\n')
@@ -302,7 +303,7 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" on
                 if (cY1 <= oY2){
                     // If it does, physically move the name up a level.
                     y = currentP.getAttribute("y")
-                    currentP.setAttribute("y", y-10)
+                    currentP.setAttribute("y", y-levelHeight)
                     // Then remove it from current level array and add to the next level array.
                     nextLevel.push(curLevel_f.splice(i-nextLevel.length,1))
                 }
