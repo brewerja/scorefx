@@ -228,12 +228,7 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" on
             storeString5 = storeString5 + str(y) + postfix
             storeString6 = storeString6 + str(awayPitchers[i][1]) + postfix
         img.write('    // Create explicit arrays to move data from Python to JS.\n')
-        img.write(storeString1)
-        img.write(storeString2)
-        img.write(storeString3)            
-        img.write(storeString4)
-        img.write(storeString5)
-        img.write(storeString6)
+        img.write(storeString1+storeString2+storeString3+storeString4+storeString5+storeString6)
         
         img.write('\n    drawPitchers(h_nameWidths, h_hashWidths, h_yName, h_yHash, '+str(len(homePitchers))+', "homeP", '+str(self.awayX + self.boxWidth + self.pitcherBuf)+', '+str(self.awayY+h)+')')
         img.write('\n    drawPitchers(a_nameWidths, a_hashWidths, a_yName, a_yHash, '+str(len(awayPitchers))+', "awayP", '+str(self.homeX - self.boxWidth - self.pitcherBuf)+', '+str(self.homeY+h)+')\n')        

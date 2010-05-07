@@ -79,22 +79,16 @@ class procMLB(saxutils.handler.ContentHandler):
         elif (name == 'action'):
             self.desc = self.desc + attrs.get('des')
             e = attrs.get('event')
-            if e == 'Pitching Substitution' or e == 'Relief with No Outs':                  
+            if e == 'Pitching Substitution':                  
                 # look up pitcherID
                 self.updatePitcher(attrs.get('player'))
                 if self.curTeam == "A":
-                    # If the pitcher listed here is already in the game, we need to get 
-                    # the new pitcher in the next atbat. So far I've only seen this with
-                    # the 'Relief with No Outs' event.
-                    if self.pitcher != self.homePitchers[-1][0]:
-                        self.homePitchers.append([self.pitcher, self.box.getCurBatter("A")])
-                    else:
-                        self.reliefNoOutsFlag = True
+                    self.homePitchers.append([self.pitcher, self.box.getCurBatter("A")])
                 elif self.curTeam == "H":
-                    if self.pitcher != self.awayPitchers[-1][0]:
-                        self.awayPitchers.append([self.pitcher, self.box.getCurBatter("H")])
-                    else:
-                        self.reliefNoOutsFlag = True
+                    self.awayPitchers.append([self.pitcher, self.box.getCurBatter("H")])
+            if e == 'Relief with No Outs':
+                self.reliefNoOutsFlag = True
+                
         elif (name == 'atbat'):
             # Inefficient IF's, should just get the starting pitcher somewhere else
             if self.homePitchers == [] and self.curTeam == "A":
