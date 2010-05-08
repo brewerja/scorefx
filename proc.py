@@ -220,16 +220,16 @@ class procMLB(saxutils.handler.ContentHandler):
             if mtch :
                 play = plays["ground"] + positions[mtch.group(1)]
                 result = const.OUT
-            elif (words[i+1] == "out" and words[i+2] == "to") :
-                play = plays["ground"] + positions[words[i+3]]
+            elif (words[i + 1] == "out" and words[i + 2] == "to") :
+                play = plays["ground"] + positions[words[i + 3]]
                 result = const.OUT
-            elif (words[i+1] == "out" and words[i+3] == "to") :
-                play = plays["ground"] + positions[words[i+4]]
+            elif (words[i + 1] == "out" and words[i + 3] == "to") :
+                play = plays["ground"] + positions[words[i + 4]]
                 result = const.OUT
-            elif ''.join(words[i+1:i+4]) == "intodoubleplay," :
+            elif ''.join(words[i + 1:i + 4]) == "intodoubleplay," :
                 play = "DP"
                 result = const.OUT
-            elif ''.join(words[i+1:i+5]) == "intoaforceout," :
+            elif ''.join(words[i + 1:i + 5]) == "intoaforceout," :
                 # description is "grounds into a force out, (pos) to (pos)"
                 # or "grounds into a force out, fielded by (pos)."
                 play = plays["ground"]
@@ -302,7 +302,7 @@ class procMLB(saxutils.handler.ContentHandler):
                 if mtch:
                     play = plays[mtch.group(1)] + positions[mtch.group(2)]
                     result = const.HIT                
-            elif ''.join(words[i+1:i+4]) == "agrandslam" :
+            elif ''.join(words[i + 1:i + 4]) == "agrandslam" :
                 play = plays["home run"]
                 result = const.HIT
         elif word == "hit" :
