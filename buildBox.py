@@ -17,7 +17,7 @@ class BoxScore :
              playWidth + 3 * baseWidth,
              playWidth + 4 * baseWidth]
     boxHeight = 500
-    space = 175
+    space = 200
     # awayX is the top left corner of away's box
     # homeX is the top right corner of home's box
     # this lets us lay out the boxes the same, only changing from + to -
@@ -29,6 +29,8 @@ class BoxScore :
     batterHeight = 17
     curHomeBatter = homeY
     curAwayBatter = awayY
+    inning = 1
+    lastInningY = awayY
 
     def __init__(self, outfile) :
         self.imgFile = outfile
@@ -494,7 +496,10 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" on
         self.writeLine(self.awayX + self.nameWidth, y, self.awayX + self.boxWidth, y)
         self.writeLine(self.homeX - self.nameWidth, y, self.homeX - self.boxWidth, y)
         self.imgFileTmp.write('</g>\n\n')
-    
+        self.writeText(str(self.inning), (self.awayX + self.homeX)/2, (y + self.lastInningY)/2+2.5, anchor="middle", color="blue", weight="bold")
+        self.inning = self.inning + 1
+        self.lastInningY = y
+        
     def getCurBatter(self, team):
         if team == "A":
             return self.curAwayBatter
