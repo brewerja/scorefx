@@ -138,7 +138,8 @@ class BoxScore :
                 self.writeLine(x - 5, self.homeY, x + 5, self.homeY)
             else:
                 self.writeLine(x - 5, p[1] + 2, x + 5, p[1] + 2)
-        self.writeLine(x - 5, self.homeY + h, x + 5, self.homeY + h)
+        #self.writeLine(x - 5, self.homeY + h, x + 5, self.homeY + h)
+        self.writeLine(x - 5, self.homeHash, x + 5, self.homeHash)
         
         f.write('</g>\n')  
         
@@ -161,7 +162,7 @@ class BoxScore :
                 self.writeText(str(awayPitchers[i][0]), x + 5, y + 1, rot=270, anchor="middle", id="awayP" + str(i))
             else:
                 self.writeText(str(awayPitchers[i][0]), x + 5, y + 2, rot=270, anchor="middle", id="awayP" + str(i))
-        y = (awayPitchers[-1][1] + self.homeY + h) / 2
+        y = (awayPitchers[-1][1] + self.homeHash) / 2
         self.writeText(str(awayPitchers[-1][0]), x + 5, y + 1, rot=270, anchor="middle", id="awayP" + str(len(awayPitchers) - 1))      
 
         f.write('</svg>\n')
@@ -221,8 +222,8 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" on
                 y = (awayPitchers[i][1] + awayPitchers[i + 1][1]) / 2
                 postfix = ', '
             else:
-                hashwidth = (self.awayY + h) - awayPitchers[i][1]
-                y = (awayPitchers[-1][1] + self.awayY + h) / 2
+                hashwidth = (self.homeHash) - awayPitchers[i][1]
+                y = (awayPitchers[-1][1] + self.homeHash) / 2
                 postfix = ']\n'
             storeString4 = storeString4 + str(hashwidth) + postfix
             storeString5 = storeString5 + str(y) + postfix
@@ -231,7 +232,7 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" on
         img.write(storeString1 + storeString2 + storeString3 + storeString4 + storeString5 + storeString6)
         
         img.write('\n    drawPitchers(h_nameWidths, h_hashWidths, h_yName, h_yHash, ' + str(len(homePitchers)) + ', "homeP", ' + str(self.awayX + self.boxWidth + self.pitcherBuf) + ', ' + str(self.awayY + h) + ')')
-        img.write('\n    drawPitchers(a_nameWidths, a_hashWidths, a_yName, a_yHash, ' + str(len(awayPitchers)) + ', "awayP", ' + str(self.homeX - self.boxWidth - self.pitcherBuf) + ', ' + str(self.homeY + h) + ')\n')        
+        img.write('\n    drawPitchers(a_nameWidths, a_hashWidths, a_yName, a_yHash, ' + str(len(awayPitchers)) + ', "awayP", ' + str(self.homeX - self.boxWidth - self.pitcherBuf) + ', ' + str(self.homeHash) + ')\n')        
         img.write('}\n\n')
         
         img.write('function drawPitchers(nameWidths, hashWidths, yName, yHash, numP, tagPrefix, xLoc, yBottom){\n')
@@ -483,6 +484,7 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" on
         self.writeText("S", (x1 + x2) / 2, ((y1 + y2) / 2) + 4, anchor="middle", size=8)
         
     def endInning(self) :
+        self.homeHash = self.curHomeBatter + 2
         if self.curHomeBatter > self.curAwayBatter :
             self.curAwayBatter = self.curHomeBatter
         else :
