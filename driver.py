@@ -4,7 +4,7 @@ from buildBox import BoxScore
 from google.appengine.ext import db, webapp
 from google.appengine.ext.webapp import template
 from google.appengine.ext.webapp.util import run_wsgi_app
-from models import Batter
+from models import Player
 from proc import procMLB
 from urllib2 import urlopen
 from xml.sax import make_parser
@@ -78,12 +78,12 @@ class GameChooser(webapp.RequestHandler) :
         path = os.path.join(os.path.dirname(__file__), 'templates/gamechooser.html')
         self.response.out.write(template.render(path, template_values))
 
-class BatterLookup(webapp.RequestHandler) :
+class PlayerLookup(webapp.RequestHandler) :
     def get(self) :
         pid = self.request.get("batterID")
-        btrs = Batter.gql("WHERE pid = :1", pid)
-        for btr in btrs :
-            self.response.out.write(btr.pid + " - " + btr.first[0] + ". " + btr.last)            
+        players = Player.gql("WHERE pid = :1", pid)
+        for p in players :
+            self.response.out.write(p.pid + " - " + p.first[0] + ". " + p.last)            
         
 class BuildScorecard(webapp.RequestHandler) :
     def get(self) :
@@ -121,7 +121,7 @@ class BuildScorecard(webapp.RequestHandler) :
 application = webapp.WSGIApplication([('/', DateChooser),
                                       ('/choosegame', GameChooser),
                                       ('/scorecard', BuildScorecard),
-                                      ('/batter', BatterLookup)],
+                                      ('/player', PlayerLookup)],
                                      debug=True)
 
 def main() :

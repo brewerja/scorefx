@@ -3,7 +3,7 @@
 # Parse an MLB play-by-play XML file and build a scorecard
 
 import const
-from models import Batter
+from models import Player
 import re
 from urllib2 import urlopen
 from xml.sax import saxutils
@@ -129,13 +129,13 @@ class procMLB(saxutils.handler.ContentHandler):
                 btr = self.batters[batterID]
             else :
                 # We haven't seen the batter in this game yet, query the db
-                btrs = Batter.gql("WHERE pid=:1", batterID)
+                btrs = Player.gql("WHERE pid=:1", batterID)
                 if btrs.count() == 0 :
                     # Not in the db, look him up and add him
                     f = urlopen(self.url + "/batters/" + batterID + ".xml")
                     s = f.read()
                     f.close()
-                    btr = Batter()
+                    btr = Player()
                     btr.pid = batterID
                     btr.first = re.search('first_name="(.*?)"', s).group(1)
                     btr.last = re.search('last_name="(.*?)"', s).group(1)
@@ -318,13 +318,13 @@ class procMLB(saxutils.handler.ContentHandler):
             p = self.pitchers[pitcherID]
         else :
             # We haven't seen the pitcher in this game yet, query the db
-            pchrs = Batter.gql("WHERE pid=:1", pitcherID)
+            pchrs = Player.gql("WHERE pid=:1", pitcherID)
             if pchrs.count() == 0 :
                 # Not in the db, look him up and add him
                 f = urlopen(self.url + "/pitchers/" + pitcherID + ".xml")
                 s = f.read()
                 f.close()
-                p = Batter()
+                p = Player()
                 p.pid = pitcherID
                 p.first = re.search('first_name="(.*?)"', s).group(1)
                 p.last = re.search('last_name="(.*?)"', s).group(1)
