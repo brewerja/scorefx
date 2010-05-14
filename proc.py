@@ -60,7 +60,6 @@ class procMLB(saxutils.handler.ContentHandler):
         # which base the runner advanced to
         # Ex: [2, 3, 4, None] runners on first and second.  Batter doubles,
         # runner from first to third and runner from second scores
-        self.onBase = [None, None, None, None]
         self.batters = dict()
         self.pitchers = dict()
         self.offline = False
@@ -72,10 +71,8 @@ class procMLB(saxutils.handler.ContentHandler):
     def startElement(self, name, attrs):
         if (name == 'top'):
             self.curTeam = "A"
-            self.onBase = [None, None, None, None]
         elif (name == 'bottom'):
             self.curTeam = "H"
-            self.onBase = [None, None, None, None]
         elif (name == 'action'):
             self.desc = self.desc + attrs.get('des')
             e = attrs.get('event')
@@ -106,14 +103,6 @@ class procMLB(saxutils.handler.ContentHandler):
                     self.updatePitcher(attrs.get('pitcher'))
                     self.awayPitchers.append([self.pitcher, self.box.getCurBatter("H")])                    
                 
-            # Adjust baserunners.  onBase currently stores info on advancement
-            # Make a copy, reset onBase and place baserunners
-            # the default is runners don't advance
-            tmp = list(self.onBase)
-            self.onBase = [None, None, None, None]
-            for t in tmp :
-                if t and t < 4 :
-                    self.onBase[t] = t
             self.scored = []
             #self.play = attrs.get('event')
             #if self.play in plays :
@@ -167,19 +156,11 @@ class procMLB(saxutils.handler.ContentHandler):
                 self.scored.append(fromBase)
             elif toBase == 4 :
                 toBase = fromBase
-            # update our runner tracking array
-            self.onBase[fromBase] = toBase
                 
     def endElement(self, name):
         if name == 'atbat' :
-            # We're done with this atbat, write out the play and the runners
-            self.box.writeBatter(self.curTeam, self.batter, self.play, self.result, self.desc, self.onBase[0])
-            self.desc = ''
-            for fromBase, toBase in enumerate(self.onBase) :
-                # toBase == None means no runner on fromBase
-                # fromBase == 0 is the batter, we handle that in writeBatter
-                if toBase and fromBase > 0 :
-                    self.box.advanceRunner(self.curTeam, fromBase, toBase)
+            pass
+
     
     def parsePlay(self, des) :
         name = ""
