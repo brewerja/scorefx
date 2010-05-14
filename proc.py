@@ -3,7 +3,7 @@
 # Parse an MLB play-by-play XML file and build a scorecard
 
 import const
-from models import Player
+from models import Player, InningState, Base
 import re
 from urllib2 import urlopen
 from xml.sax import saxutils
@@ -67,12 +67,15 @@ class procMLB(saxutils.handler.ContentHandler):
         self.homePitchers = []
         self.awayPitchers = []
         self.reliefNoOutsFlag = False
+        self.batterEvent = ''
         
     def startElement(self, name, attrs):
         if (name == 'top'):
             self.curTeam = "A"
+            self.inningState = InningState()
         elif (name == 'bottom'):
             self.curTeam = "H"
+            self.inningState = InningState()
         elif (name == 'action'):
             self.desc = self.desc + attrs.get('des')
             e = attrs.get('event')
@@ -102,13 +105,10 @@ class procMLB(saxutils.handler.ContentHandler):
                 elif self.curTeam == "H":
                     self.updatePitcher(attrs.get('pitcher'))
                     self.awayPitchers.append([self.pitcher, self.box.getCurBatter("H")])                    
-                
-            self.scored = []
-            #self.play = attrs.get('event')
-            #if self.play in plays :
-            #    self.play = plays[self.play]
+
             self.desc = self.desc + attrs.get('des')
             (self.play, self.result) = self.parsePlay(attrs.get('des'))
+            self.batterEvent = attrs.get('event')
             
             # look up batterID
             batterID = attrs.get('batter')
@@ -134,7 +134,8 @@ class procMLB(saxutils.handler.ContentHandler):
                 # Cache the batter to save future trips to the db
                 self.batters[batterID] = btr
             if not self.offline :
-                self.batter = btr.first[0] + ". " + btr.last
+                self.batter = batterID
+                self.batterName = btr.first[0] + ". " + btr.last
         elif (name == 'runner'):
             # Handle a runner advancing
             start = attrs.get('start')
