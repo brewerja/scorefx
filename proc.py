@@ -68,6 +68,8 @@ class procMLB(saxutils.handler.ContentHandler):
         self.awayPitchers = []
         self.reliefNoOutsFlag = False
         self.batterEvent = ''
+        self.noBatterRunner = True
+        self.pinchRunnerID = None
         
     def startElement(self, name, attrs):
         if (name == 'top'):
@@ -88,6 +90,11 @@ class procMLB(saxutils.handler.ContentHandler):
                     self.awayPitchers.append([self.pitcher, self.box.getCurBatter("H")])
             if e == 'Relief with No Outs':
                 self.reliefNoOutsFlag = True
+            if e == 'Offensive sub':
+                action = attrs.get('des')
+                mtch = re.search('Pinch runner .* replaces .*', action)
+                if mtch:
+                    self.pinchRunnerID = attrs.get('player')
                 
         elif (name == 'atbat'):
             # Inefficient IF's, should just get the starting pitcher somewhere else
@@ -138,31 +145,46 @@ class procMLB(saxutils.handler.ContentHandler):
             
             # Create a Batter object to be added at the end of the <atbat> tag.
             self.batterObj = self.inningState.createBatter(batterID, code, result)
+            
         elif (name == 'runner'):
             # Handle a runner advancing
-            start = attrs.get('start')
-            end = attrs.get('end')
-
-            # parsing start is easy enough
-            if start == "" :
-                fromBase = 0
-            else :
-                fromBase = bases[start]
+            fromBase = attrs.get('start')
+            toBase = attrs.get('end')
 
             # handling end is tougher
             # "" doesn't mean the same thing all the time
             # if the runner scores end will be "" and score will be "T"
             # at the end of the inning, stranded runners have end = ""
             # other places?
-            toBase = bases[end]
-            if attrs.get('score') == "T" :
-                self.scored.append(fromBase)
-            elif toBase == 4 :
+            willScore = False
+            if attrs.get('score') == "T":
+                willScore = True
+                toBase = Base.HOME
+            elif toBase == '' :
                 toBase = fromBase
+                
+            code = ''
+            out = False
+            
+            pid = attrs.get('id')
+            
+            if pid == self.pinchRunnerID:
+                self.inningState.pinchRunner(fromBase, self.pinchRunnerID)
+            
+            # If this runner is also the batter, then go ahead and add the batter here.
+            if pid == self.batterObj.id:
+                self.noBatterRunner = False
+                self.inningState.addBatter(self.batterObj, toBase, out, willScore)
+            else: # otherwise, it's a runner already on base, so advance him accordingly.
+                runnerObj = self.inningState.onBase[pid]
+                self.inningState.advRunner(runnerObj, toBase, code, out)
                 
     def endElement(self, name):
         if name == 'atbat':
-            self.inningState.addBatter(self, self.batterObj)
+            # if there is not a runner tag for the batter, then you don't need the extra stuff
+            if self.noBatterRunner:
+                self.inningState.addBatter(self.batterObj)
+                self.noBatterRunner = True
 
     
     def parsePlay(self, des):
