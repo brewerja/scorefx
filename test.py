@@ -1,4 +1,5 @@
 from models import Batter, Base, InningState
+import const
 
 def onBaseState():
     baseState = [None, None, None]
@@ -18,14 +19,13 @@ def onBaseState():
 
 innS = InningState()
 onBaseState()
-b1 = innS.addBatter(111, 'F6', Base.FIRST, out=False)
+b1 = innS.addBatter(innS.createBatter(111, 'F6', const.HIT), Base.FIRST, out=False)
 onBaseState()
 innS.advRunner(b1, Base.SECOND, 'SB')
 onBaseState()
-b2 = innS.addBatter(222, 'K')
+b2 = innS.addBatter(innS.createBatter(222, 'K', const.OUT))
 onBaseState()
-b3 = innS.addBatter(333, 'F7', Base.SECOND, out=False)
-onBaseState()
+b3 = innS.addBatter(innS.createBatter(333, 'F7', const.HIT), Base.SECOND, out=False)
 innS.advRunner(b1, Base.HOME, out=False)
 onBaseState()
 innS.pinchRunner(Base.SECOND, 'newid')

@@ -6,24 +6,23 @@ class Player(db.Model) :
     last = db.StringProperty()
     
 class Batter():
-    def __init__(self, id, code, toBase, out, willScore):
+    def __init__(self, id, code, result):
         self.id = id # from MLB XML
+        self.code = code
+        self.result = result
         self.events = [] # list of events, indexed by actionCount.  if no event @ an index, use None
-        fromBase = ''
-        self.events.append(Event("AtBat", code, fromBase, toBase, out))
-        self.willScore = willScore # whether a player will eventually score.  will need to refine this to handle batting around
-        self.onBase = toBase # the base where the player is currently.  use the advance() function to change
  
     def advance(self, actionCount, code, toBase, out):
         # update onBase and add an event to events at index actionCount
         fromBase = self.onBase
-        e = Event("RunnerAdvance", code, fromBase, toBase, out)
         self.onBase = toBase
         while len(self.events) < actionCount :
             self.events.append(None)
-        self.events.append(e)
         if toBase == '4B' and out == False:
             self.willScore = True
+        e = Event("RunnerAdvance", code, fromBase, toBase, out)            
+        self.events.append(e)
+
     
     def eventAt(self, actionCount):
         if len(self.events) > actionCount:
@@ -56,13 +55,21 @@ class InningState:
         self.batters = []
         self.onBase = {}
 
-    def addBatter(self, id, code, toBase='', out=True, willScore=False):
-        batterObj = Batter(id, code, toBase, out, willScore)
+    def createBatter(self, id, code, result):
+        return Batter(id, code, result)
+
+    def addBatter(self, batterObj, toBase='', out=True, willScore=False):
         self.batters.append(batterObj)
         self.actionCount += 1
-        while len(batterObj.events) <= self.actionCount:
-            batterObj.events.insert(0,None)
-        if out == False:
+        while len(batterObj.events) < self.actionCount:
+            batterObj.events.append(None)
+        fromBase = ''
+        batterObj.events.append(Event("AtBat", batterObj.code, fromBase, toBase, out))
+        batterObj.willScore = willScore # whether a player will eventually score.  will need to refine this to handle batting around
+        batterObj.onBase = toBase # the base where the player is currently.  use the advance() function to change
+
+        events = batterObj.events
+        if events[len(events)-1].out == False:
             self.onBase[batterObj.id] = batterObj
         return batterObj
     
@@ -76,7 +83,7 @@ class InningState:
     
     def pinchRunner(self, base, newID):
         for key, runnerObj in self.onBase.items():
-            if self.onBase[key] == base:
+            if self.onBase[key].onBase == base:
                 self.onBase[key].id = newID
                 self.onBase[newID] = self.onBase.pop(key)
         
