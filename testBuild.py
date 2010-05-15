@@ -40,7 +40,7 @@ if __name__ == '__main__' :
     s = f.read()
     f.close()
     for i in range(1, len(re.findall('"inning_\d+\.xml"', s)) + 1) :
-        print i
+        print 'Inning: ' + str(i)
         f = urlopen(url + '/inning/inning_' + str(i) + '.xml')
         parser.parse(f)
         f.close()

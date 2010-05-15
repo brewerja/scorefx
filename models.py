@@ -16,7 +16,7 @@ class Batter():
         # update onBase and add an event to events at index actionCount
         fromBase = self.onBase
         self.onBase = toBase
-        while len(self.events) < actionCount :
+        while len(self.events) < actionCount:
             self.events.append(None)
         if toBase == '4B' and out == False:
             self.willScore = True
@@ -54,6 +54,7 @@ class InningState:
         self.actionCount = -1
         self.batters = []
         self.onBase = {}
+        self.runnerStack = {}
 
     def createBatter(self, id, code, result):
         return Batter(id, code, result)
@@ -73,13 +74,23 @@ class InningState:
             self.onBase[batterObj.id] = batterObj
         return batterObj
     
-    def advRunner(self, runnerObj, toBase, code='', out=False):
-        if code != '':
-            self.actionCount += 1
-        runnerObj.advance(self.actionCount, code, toBase, out)
-        # If the runner is out on the basepaths or scores, he's no longer on base.
-        if out == True or (out == False and toBase == '4B'):
-            self.onBase.pop(runnerObj.id)
+    def clearRunners(self):
+        for key, val in self.runnerStack.items():
+            code = val[0]
+            toBase = val[1]
+            out = val[2]
+            self.advRunner(self.onBase[key], code, toBase, out, True)
+        self.runnerStack = {}
+    
+    def advRunner(self, runnerObj, toBase, code='', out=False, clearStack = False):
+        if clearStack == True:
+            runnerObj.advance(self.actionCount, code, toBase, out)
+            # If the runner is out on the basepaths or scores, he's no longer on base.
+            if out == True or (out == False and toBase == '4B'):
+                self.onBase.pop(runnerObj.id)
+        else:
+            self.runnerStack[runnerObj.id] = [code, toBase, out]
+
     
     def pinchRunner(self, base, newID):
         for key, runnerObj in self.onBase.items():

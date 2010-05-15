@@ -70,6 +70,7 @@ class procMLB(saxutils.handler.ContentHandler):
         self.batterEvent = ''
         self.noBatterRunner = True
         self.pinchRunnerID = None
+        self.inningState = None
         
     def startElement(self, name, attrs):
         if (name == 'top'):
@@ -145,11 +146,16 @@ class procMLB(saxutils.handler.ContentHandler):
             
             # Create a Batter object to be added at the end of the <atbat> tag.
             self.batterObj = self.inningState.createBatter(batterID, code, result)
+        
+        elif (name == 'pitch' and len(self.inningState.runnerStack)) != 0:
+              self.inningState.actionCount += 1
+              self.inningState.clearRunners()
             
         elif (name == 'runner'):
             # Handle a runner advancing
             fromBase = attrs.get('start')
             toBase = attrs.get('end')
+            event = attrs.get('event')
 
             # handling end is tougher
             # "" doesn't mean the same thing all the time
@@ -162,9 +168,46 @@ class procMLB(saxutils.handler.ContentHandler):
                 toBase = Base.HOME
             elif toBase == '' :
                 toBase = fromBase
-                
-            code = ''
+            
             out = False
+            code = ''
+            
+            mtch = re.search('Caught Stealing', event)
+            if mtch:
+                code = 'CS'
+                if attrs.get('end') == '':
+                    out = True
+            mtch = re.search('Defensive Indiff', event)
+            if mtch:
+                code = 'DI'
+            mtch = re.search('Error', event)
+            if mtch:
+                code = 'E' 
+            mtch = re.search('Passed Ball', event)
+            if mtch:
+                code = 'PB'
+            mtch = re.search('Picked off stealing', event)
+            if mtch:
+                code = 'POCS'
+                if attrs.get('end') == '':
+                    out = True      
+            mtch = re.search('Pickoff', event)
+            if mtch:
+                code = 'PO'
+                if attrs.get('end') == '':
+                    out = True
+            mtch = re.search('Pickoff Error', event)
+            if mtch:
+                code = 'E'
+            mtch = re.search('Pickoff Attempt', event)
+            if mtch:
+                code = ''                                                                           
+            mtch = re.search('Stolen Base', event)
+            if mtch:
+                code = 'SB'
+            mtch = re.search('Wild Pitch', event)
+            if mtch:
+                code = 'WP'                 
             
             pid = attrs.get('id')
             
@@ -175,16 +218,29 @@ class procMLB(saxutils.handler.ContentHandler):
             if pid == self.batterObj.id:
                 self.noBatterRunner = False
                 self.inningState.addBatter(self.batterObj, toBase, out, willScore)
+                self.inningState.clearRunners()
             else: # otherwise, it's a runner already on base, so advance him accordingly.
+                # NOTE THAT YOU MUST SEND A CODE TO UP THE ACTIONCOUNT ('SB', 'CS', etc.)
                 runnerObj = self.inningState.onBase[pid]
                 self.inningState.advRunner(runnerObj, toBase, code, out)
                 
     def endElement(self, name):
         if name == 'atbat':
             # if there is not a runner tag for the batter, then you don't need the extra stuff
-            if self.noBatterRunner:
+            if self.noBatterRunner == True:
                 self.inningState.addBatter(self.batterObj)
-                self.noBatterRunner = True
+            self.noBatterRunner = True
+        if name == 'top' or name == 'bottom':
+            for i in range(0, self.inningState.actionCount+1):
+                string = str(i) + ': '
+                for b in self.inningState.batters:
+                    e = b.eventAt(i)
+                    if e != None:
+                        string += e.type + ' '
+                print string
+                string = ''
+            print '--'
+            
 
     
     def parsePlay(self, des):
