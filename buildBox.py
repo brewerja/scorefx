@@ -36,6 +36,13 @@ class BoxScore :
         self.imgFile = outfile
         self.imgFileTmp = tempfile.TemporaryFile()
         
+    def drawInning(self, inningState):
+        for i in range(0, inningState.actionCount+1):
+            for b in inningState.batters:
+                e = b.eventAt(i)
+                if e != None:
+                    pass
+        
     def writeLine(self, x1, y1, x2, y2) :
         f = self.imgFileTmp
         f.write('<line x1="' + str(x1) + '" y1="' + str(y1) + '" x2="' + str(x2) + '" y2="' + str(y2) + '"/>\n')

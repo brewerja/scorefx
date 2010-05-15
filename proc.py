@@ -70,15 +70,13 @@ class procMLB(saxutils.handler.ContentHandler):
         self.batterEvent = ''
         self.noBatterRunner = True
         self.pinchRunnerID = None
-        self.inningState = None
+        self.inningState = InningState()
         
     def startElement(self, name, attrs):
         if (name == 'top'):
             self.curTeam = "A"
-            self.inningState = InningState()
         elif (name == 'bottom'):
             self.curTeam = "H"
-            self.inningState = InningState()
         elif (name == 'action'):
             self.desc = self.desc + attrs.get('des')
             e = attrs.get('event')
@@ -114,6 +112,7 @@ class procMLB(saxutils.handler.ContentHandler):
                     self.updatePitcher(attrs.get('pitcher'))
                     self.awayPitchers.append([self.pitcher, self.box.getCurBatter("H")])                    
 
+            self.outs = int(attrs.get('o'))
             self.desc = self.desc + attrs.get('des')
             (code, result) = self.parsePlay(attrs.get('des'))
             self.batterEvent = attrs.get('event')
@@ -149,13 +148,15 @@ class procMLB(saxutils.handler.ContentHandler):
         
         elif (name == 'pitch' and len(self.inningState.runnerStack)) != 0:
               self.inningState.actionCount += 1
-              self.inningState.clearRunners()
+              self.inningState.clearRunners(duringAB = True)
             
         elif (name == 'runner'):
             # Handle a runner advancing
             fromBase = attrs.get('start')
             toBase = attrs.get('end')
             event = attrs.get('event')
+            out = False
+            code = ''
 
             # handling end is tougher
             # "" doesn't mean the same thing all the time
@@ -166,11 +167,11 @@ class procMLB(saxutils.handler.ContentHandler):
             if attrs.get('score') == "T":
                 willScore = True
                 toBase = Base.HOME
-            elif toBase == '' :
+            elif toBase == '' and self.outs == 3: #stranded at the end of an inning, or out!?
                 toBase = fromBase
-            
-            out = False
-            code = ''
+            elif toBase == '':
+                toBase = str(bases[fromBase]+1)+'B'
+                out = True
             
             mtch = re.search('Caught Stealing', event)
             if mtch:
@@ -218,9 +219,19 @@ class procMLB(saxutils.handler.ContentHandler):
             if pid == self.batterObj.id:
                 self.noBatterRunner = False
                 self.inningState.addBatter(self.batterObj, toBase, out, willScore)
+                for key, val in self.inningState.onBase.items():
+                    if key not in self.inningState.runnerStack and pid != key:
+                        runnerObj = self.inningState.onBase[key]
+                        fromBase = runnerObj.onBase
+                        if fromBase == '1B':
+                            toBase = '1B'
+                        elif (fromBase == '2B' or fromBase == '2X'):
+                            toBase = '2B'
+                        elif fromBase == '3B' or fromBase == '3X':
+                            toBase = '3B'
+                        self.inningState.advRunner(runnerObj, toBase)
                 self.inningState.clearRunners()
             else: # otherwise, it's a runner already on base, so advance him accordingly.
-                # NOTE THAT YOU MUST SEND A CODE TO UP THE ACTIONCOUNT ('SB', 'CS', etc.)
                 runnerObj = self.inningState.onBase[pid]
                 self.inningState.advRunner(runnerObj, toBase, code, out)
                 
@@ -230,19 +241,34 @@ class procMLB(saxutils.handler.ContentHandler):
             if self.noBatterRunner == True:
                 self.inningState.addBatter(self.batterObj)
             self.noBatterRunner = True
+            
+            
         if name == 'top' or name == 'bottom':
             for i in range(0, self.inningState.actionCount+1):
-                string = str(i) + ': '
+                if i in self.inningState.atbats:
+                    string = str(i) + '*:'
+                else:
+                    string = str(i) + ':'
                 for b in self.inningState.batters:
                     e = b.eventAt(i)
                     if e != None:
-                        string += e.type + ' '
+                        string += e.fromBase + '->' + e.toBase + ' '
                 print string
                 string = ''
             print '--'
-            
-
-    
+      #      for b in self.inningState.batters:
+      #          for i in range(0,len(b.events)):
+      #              e = b.events[i]
+      #              if e == None:
+      #                  print None
+      #              else:
+      #                  print e.fromBase + '->' + e.toBase
+      #          print self.inningState.atbats
+      #          print '--'
+            self.box.drawInning(self.inningState)
+            self.inningState = InningState()
+          
+   
     def parsePlay(self, des):
         name = ""
         code = "XXX"
