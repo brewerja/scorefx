@@ -38,10 +38,32 @@ class BoxScore :
         
     def drawInning(self, inningState):
         for i in range(0, inningState.actionCount+1):
-            for b in inningState.batters:
+            if i in inningState.atbats:
+                batter_num = inningState.atbats[i]
+                b = inningState.batters[batter_num]
                 e = b.eventAt(i)
-                if e != None:
-                    pass
+                if e.toBase != '':
+                    toBase = int(e.toBase[0])
+                else:
+                    toBase = 0                 
+                self.writeBatter(inningState.team, b.id, e.code, b.result, b.desc, toBase)
+                
+                for b in inningState.batters:
+                    e = b.eventAt(i)
+                    if e != None:
+                        if e.toBase != '':
+                            toBase = int(e.toBase[0])
+                        else:
+                            toBase = 0   
+                        if e.fromBase != '':
+                            fromBase = int(e.fromBase[0])
+                        else:
+                            fromBase = 0                                                  
+                        if e.type == 'RunnerAdvance':
+                            self.advanceRunner(inningState.team, fromBase, toBase, not e.out)
+            else:
+                pass #Runners duringAB's.
+
         
     def writeLine(self, x1, y1, x2, y2) :
         f = self.imgFileTmp

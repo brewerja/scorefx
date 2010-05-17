@@ -144,7 +144,7 @@ class procMLB(saxutils.handler.ContentHandler):
                 self.batterName = btr.first[0] + ". " + btr.last
             
             # Create a Batter object to be added at the end of the <atbat> tag.
-            self.batterObj = self.inningState.createBatter(batterID, code, result)
+            self.batterObj = self.inningState.createBatter(batterID, code, result, self.desc)
         
         elif (name == 'pitch' and self.inningState.runnerStack != {}):
               self.inningState.actionCount += 1
@@ -226,6 +226,7 @@ class procMLB(saxutils.handler.ContentHandler):
                 
     def endElement(self, name):
         if name == 'atbat':
+            self.desc = ''
             # if there is not a runner tag for the batter, then you don't need the extra stuff
             if self.noBatterRunner == True:
                 self.inningState.addBatter(self.batterObj)
@@ -233,22 +234,22 @@ class procMLB(saxutils.handler.ContentHandler):
             self.noBatterRunner = True
               
         if name == 'top' or name == 'bottom':
-            for i in range(0, self.inningState.actionCount+1):
-                if i in self.inningState.atbats:
-                    string = str(i) + '*:'
-                else:
-                    string = str(i) + ':'
-                for b in self.inningState.batters:
-                    e = b.eventAt(i)
-                    if e != None:
-                        if e.out == True:
-                            end = '*'
-                        else:
-                            end = ''
-                        string += e.fromBase + '->' + e.toBase + end + ' '
-                print string
-                string = ''
-            print '--'
+     #       for i in range(0, self.inningState.actionCount+1):
+     #           if i in self.inningState.atbats:
+     #               string = str(i) + '*:'
+     #           else:
+     #               string = str(i) + ':'
+     #           for b in self.inningState.batters:
+     #               e = b.eventAt(i)
+     #               if e != None:
+     #                   if e.out == True:
+     #                       end = '*'
+     #                   else:
+     #                       end = ''
+     #                   string += e.fromBase + '->' + e.toBase + end + ' '
+     #           print string
+     #           string = ''
+     #       print '--'
       #      for b in self.inningState.batters:
       #          for i in range(0,len(b.events)):
       #              e = b.events[i]
@@ -258,6 +259,7 @@ class procMLB(saxutils.handler.ContentHandler):
       #                  print e.fromBase + '->' + e.toBase
       #          print self.inningState.atbats
       #          print '--'
+            self.inningState.team = self.curTeam      
             self.box.drawInning(self.inningState)
             self.inningState = InningState()
           

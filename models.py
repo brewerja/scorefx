@@ -6,10 +6,11 @@ class Player(db.Model) :
     last = db.StringProperty()
     
 class Batter():
-    def __init__(self, id, code, result):
+    def __init__(self, id, code, result, desc):
         self.id = id # from MLB XML
-        self.code = code
-        self.result = result
+        self.code = code # F7, L8, G6, etc.
+        self.result = result # ERROR, HIT, OTHER, OUT (const.py)
+        self.desc = desc
         self.events = [] # list of events, indexed by actionCount.  if no event @ an index, use None
  
     def advance(self, actionCount, code, toBase, out):
@@ -46,10 +47,10 @@ class InningState:
         self.batters = []
         self.onBase = {}
         self.runnerStack = {}
-        self.atbats = []
+        self.atbats = {}
 
-    def createBatter(self, id, code, result):
-        return Batter(id, code, result)
+    def createBatter(self, id, code, result, desc):
+        return Batter(id, code, result, desc)
 
     def addBatter(self, batterObj, toBase='', out=True, willScore=False):
         self.batters.append(batterObj)
@@ -58,7 +59,7 @@ class InningState:
             batterObj.events.append(None)
         fromBase = ''
         batterObj.events.append(Event("AtBat", batterObj.code, fromBase, toBase, out))
-        self.atbats.append(self.actionCount)
+        self.atbats[self.actionCount] = len(self.batters)-1
         batterObj.willScore = willScore # whether a player will eventually score.  will need to refine this to handle batting around
         batterObj.onBase = toBase # the base where the player is currently.  use the advance() function to change
 
