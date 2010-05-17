@@ -22,7 +22,6 @@ class Batter():
             self.willScore = True
         e = Event("RunnerAdvance", code, fromBase, toBase, out)            
         self.events.append(e)
-
     
     def eventAt(self, actionCount):
         if len(self.events) > actionCount:
@@ -40,15 +39,6 @@ class Event:
         self.toBase = toBase # the base where the player ends, we'll have a Base object defining "constant" values
         self.out = out # whether the player reaches toBase successfully
         self.willScore = False
-
-class Base:
-    FIRST = "1B"
-    SECOND = "2B"
-    THIRD = "3B"
-    HOME = "4B"
-    SECOND_M = "2X" # 2nd base in the "middle" of a plate appearance i.e. from a stolen base
-    THIRD_M = "3X" # ditto
-    HOME_M = "4X"
 
 class InningState:
     def __init__(self):
@@ -73,40 +63,62 @@ class InningState:
         batterObj.onBase = toBase # the base where the player is currently.  use the advance() function to change
 
         events = batterObj.events
-        if events[len(events)-1].out == False:
+        if out == False and toBase != Base.HOME:
             self.onBase[batterObj.id] = batterObj
         return batterObj
     
-    def clearRunners(self, duringAB=False):
-        if duringAB == True:
-            for key, val in self.runnerStack.items():
-                toBase = self.runnerStack[key][1]
-                if toBase == Base.SECOND:
-                    self.runnerStack[key][1] = Base.SECOND_M
-                elif toBase == Base.THIRD:
-                    self.runnerStack[key][1] = Base.THIRD_M
-                elif toBase == Base.HOME:
-                    self.runnerStack[key][1] = Base.HOME_M
+    def advRunners(self, duringAB=False):
         
-        for key, val in self.runnerStack.items():
-            code = val[0]
-            toBase = val[1]
-            out = val[2]
-            self.advRunner(self.onBase[key], toBase, code, out, True)
+        if duringAB == False:
+            # Hold runners who are already on base, but who did not move.
+            for key, runnerObj in self.onBase.items():
+                if key not in self.runnerStack and self.batters[-1].id != key:
+                    fromBase = runnerObj.onBase
+                    if fromBase == Base.FIRST:
+                        toBase = Base.FIRST
+                    elif fromBase == Base.SECOND or fromBase == Base.SECOND_M:
+                        toBase = Base.SECOND
+                    elif fromBase == Base.THIRD or fromBase == Base.THIRD_M:
+                        toBase = Base.THIRD
+                    self.addRunner(runnerObj, toBase)        
+        
+        if duringAB == True:
+            for key, r in self.runnerStack.items():
+                toBase = r.toBase
+                if toBase == Base.SECOND:
+                    r.toBase = Base.SECOND_M
+                elif toBase == Base.THIRD:
+                    r.toBase = Base.THIRD_M
+                elif toBase == Base.HOME:
+                    r.toBase = Base.HOME_M
+        
+        for key, r in self.runnerStack.items():
+            runnerObj = self.onBase[key]
+            runnerObj.advance(self.actionCount, r.code, r.toBase, r.out)
+            # If a runners scores or is out on the play, take him off the bases.
+            if r.toBase == '4B' or r.toBase == '4X' or r.out == True:
+                self.onBase.pop(key)
         self.runnerStack = {}
-    
-    def advRunner(self, runnerObj, toBase, code='', out=False, clearStack=False):
-        if clearStack == True:
-            runnerObj.advance(self.actionCount, code, toBase, out)
-            # If the runner is out on the basepaths or scores, he's no longer on base.
-            if out == True or (out == False and toBase == '4B'):
-                self.onBase.pop(runnerObj.id)
-        else:
-            self.runnerStack[runnerObj.id] = [code, toBase, out]
+            
+    def addRunner(self, runnerObj, toBase, code='', out=False):
+        self.runnerStack[runnerObj.id] = Runner(toBase, code, out)
     
     def pinchRunner(self, base, newID):
         for key, runnerObj in self.onBase.items():
             if self.onBase[key].onBase == base:
                 self.onBase[key].id = newID
                 self.onBase[newID] = self.onBase.pop(key)
-        
+class Runner:
+    def __init__(self, toBase, code, out):
+        self.toBase = toBase
+        self.code = code
+        self.out = out
+
+class Base:
+    FIRST = "1B"
+    SECOND = "2B"
+    THIRD = "3B"
+    HOME = "4B"
+    SECOND_M = "2X" # 2nd base in the "middle" of a plate appearance i.e. from a stolen base
+    THIRD_M = "3X" # ditto
+    HOME_M = "4X"        

@@ -146,9 +146,9 @@ class procMLB(saxutils.handler.ContentHandler):
             # Create a Batter object to be added at the end of the <atbat> tag.
             self.batterObj = self.inningState.createBatter(batterID, code, result)
         
-        elif (name == 'pitch' and len(self.inningState.runnerStack)) != 0:
+        elif (name == 'pitch' and self.inningState.runnerStack != {}):
               self.inningState.actionCount += 1
-              self.inningState.clearRunners(duringAB = True)
+              self.inningState.advRunners(duringAB = True)
             
         elif (name == 'runner'):
             # Handle a runner advancing
@@ -219,30 +219,19 @@ class procMLB(saxutils.handler.ContentHandler):
             if pid == self.batterObj.id:
                 self.noBatterRunner = False
                 self.inningState.addBatter(self.batterObj, toBase, out, willScore)
-                for key, val in self.inningState.onBase.items():
-                    if key not in self.inningState.runnerStack and pid != key:
-                        runnerObj = self.inningState.onBase[key]
-                        fromBase = runnerObj.onBase
-                        if fromBase == '1B':
-                            toBase = '1B'
-                        elif (fromBase == '2B' or fromBase == '2X'):
-                            toBase = '2B'
-                        elif fromBase == '3B' or fromBase == '3X':
-                            toBase = '3B'
-                        self.inningState.advRunner(runnerObj, toBase)
-                self.inningState.clearRunners()
+                self.inningState.advRunners()                
             else: # otherwise, it's a runner already on base, so advance him accordingly.
                 runnerObj = self.inningState.onBase[pid]
-                self.inningState.advRunner(runnerObj, toBase, code, out)
+                self.inningState.addRunner(runnerObj, toBase, code, out)
                 
     def endElement(self, name):
         if name == 'atbat':
             # if there is not a runner tag for the batter, then you don't need the extra stuff
             if self.noBatterRunner == True:
                 self.inningState.addBatter(self.batterObj)
+                self.inningState.advRunners()
             self.noBatterRunner = True
-            
-            
+              
         if name == 'top' or name == 'bottom':
             for i in range(0, self.inningState.actionCount+1):
                 if i in self.inningState.atbats:
@@ -252,7 +241,11 @@ class procMLB(saxutils.handler.ContentHandler):
                 for b in self.inningState.batters:
                     e = b.eventAt(i)
                     if e != None:
-                        string += e.fromBase + '->' + e.toBase + ' '
+                        if e.out == True:
+                            end = '*'
+                        else:
+                            end = ''
+                        string += e.fromBase + '->' + e.toBase + end + ' '
                 print string
                 string = ''
             print '--'
