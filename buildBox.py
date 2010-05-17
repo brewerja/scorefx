@@ -46,28 +46,24 @@ class BoxScore :
                     toBase = int(e.toBase[0])
                 else:
                     toBase = 0                 
-                self.writeBatter(inningState.team, b.id, e.code, b.result, b.desc, toBase)
+                self.writeBatter(inningState.team, b, toBase)
                 
                 for b in inningState.batters:
                     e = b.eventAt(i)
-                    if e != None:
-                        if e.toBase != '':
-                            toBase = int(e.toBase[0])
-                        else:
-                            toBase = 0   
-                        if e.fromBase != '':
-                            fromBase = int(e.fromBase[0])
-                        else:
-                            fromBase = 0                                                  
+                    if e != None:                                               
                         if e.type == 'RunnerAdvance':
-                            self.advanceRunner(inningState.team, fromBase, toBase, not e.out)
+                            self.advanceRunner(inningState.team, e)
             else:
-                pass #Runners duringAB's.
+                for b in inningState.batters:
+                    e = b.eventAt(i)
+                    if e != None:                                               
+                        if e.type == 'RunnerAdvance':
+                            self.advanceRunner(inningState.team, e, duringAB=True)
 
         
-    def writeLine(self, x1, y1, x2, y2) :
+    def writeLine(self, x1, y1, x2, y2, color='black', sw='1') :
         f = self.imgFileTmp
-        f.write('<line x1="' + str(x1) + '" y1="' + str(y1) + '" x2="' + str(x2) + '" y2="' + str(y2) + '"/>\n')
+        f.write('<line x1="' + str(x1) + '" y1="' + str(y1) + '" x2="' + str(x2) + '" y2="' + str(y2) + '" style="stroke:' + color + '; stroke-width:' + sw + ';"/>\n')
 
     def writeText(self, txt, x, y, rot=0, rx= -1, ry= -1, anchor=None, size=10, color="black", weight="normal", desc=None, flip=False, id=None) :
         f = self.imgFileTmp
@@ -91,9 +87,9 @@ class BoxScore :
             f.write(' id="' + id + '"')
         f.write('>' + txt + '</text>\n')
 
-    def writeCircle(self, x, y, r) :
+    def writeCircle(self, x, y, r, color='black') :
         f = self.imgFileTmp
-        f.write('<circle cx="' + str(x) + '" cy="' + str(y) + '" r="' + str(r) + '"/>\n')
+        f.write('<circle cx="' + str(x) + '" cy="' + str(y) + '" r="' + str(r) + '" style="stroke:' + color + '; fill:' + color + ';"/>\n')
 
     def writeX(self, x, y) :
         # Write an X centered at x, y
@@ -101,29 +97,27 @@ class BoxScore :
         x2 = x + 2
         y1 = y - 2
         y2 = y + 2
-        self.writeLine(x - 2, y - 2, x + 2, y + 2)
-        self.writeLine(x - 2, y + 2, x + 2, y - 2)
+        self.writeLine(x - 2, y - 2, x + 2, y + 2, 'gray')
+        self.writeLine(x - 2, y + 2, x + 2, y - 2, 'gray')
 
     def startBox(self) :
         f = self.imgFileTmp
-        f.write('<g stroke="gray" stroke-width="0.4">\n')
 
         # Start the away box
         x = self.awayX
         y = self.awayY
         w = self.boxWidth
-        self.writeLine(x, y, x + w, y)
+        self.writeLine(x, y, x + w, y, 'black', '.4')
 
         # Start the home box
         x = self.homeX
         y = self.homeY
-        self.writeLine(x, y, x - w, y)
+        self.writeLine(x, y, x - w, y, 'gray', '.4')
 
-        f.write('</g>\n\n')
+        f.write('\n\n')
         
     def endBox(self, homePitchers, awayPitchers) :
         f = self.imgFileTmp
-        f.write('<g stroke="gray" stroke-width="0.4">\n')
 
         h = self.curHomeBatter - self.homeY + 2
 
@@ -132,26 +126,26 @@ class BoxScore :
         y = self.awayY
         m = 1
         w = m * self.boxWidth
-        self.writeLine(x, y + h, x + w, y + h)
-        self.writeLine(x, y, x, y + h)
-        self.writeLine(x + m * self.nameWidth, y, x + m * self.nameWidth, y + h)
-        self.writeLine(x + m * (self.nameWidth + self.playWidth), y, x + m * (self.nameWidth + self.playWidth), y + h)
-        self.writeLine(x + w, y, x + w, y + h)
+        self.writeLine(x, y + h, x + w, y + h, 'gray', '.4')
+        self.writeLine(x, y, x, y + h, 'gray', '.4')
+        self.writeLine(x + m * self.nameWidth, y, x + m * self.nameWidth, y + h, 'gray', '.4')
+        self.writeLine(x + m * (self.nameWidth + self.playWidth), y, x + m * (self.nameWidth + self.playWidth), y + h, 'gray', '.4')
+        self.writeLine(x + w, y, x + w, y + h, 'gray', '.4')
         
         x = self.homeX
         y = self.homeY
         m = -1
         w = m * self.boxWidth
-        self.writeLine(x, y + h, x + w, y + h)
-        self.writeLine(x, y, x, y + h)
-        self.writeLine(x + m * self.nameWidth, y, x + m * self.nameWidth, y + h)
-        self.writeLine(x + m * (self.nameWidth + self.playWidth), y, x + m * (self.nameWidth + self.playWidth), y + h)
-        self.writeLine(x + w, y, x + w, y + h)
+        self.writeLine(x, y + h, x + w, y + h, 'gray', '.4')
+        self.writeLine(x, y, x, y + h, 'gray', '.4')
+        self.writeLine(x + m * self.nameWidth, y, x + m * self.nameWidth, y + h, 'gray', '.4')
+        self.writeLine(x + m * (self.nameWidth + self.playWidth), y, x + m * (self.nameWidth + self.playWidth), y + h, 'gray', '.4')
+        self.writeLine(x + w, y, x + w, y + h, 'gray', '.4')
         
-        f.write('</g>\n\n')
+        f.write('\n\n')
         
         # Draw Pitchers
-        f.write('<g id="hashMarks" stroke="black">\n')
+        f.write('<g id="hashMarks" style="stroke:black; stroke-width:1;">\n')
         
         # Draw away side hash marks
         x = self.awayX + self.boxWidth + self.pitcherBuf       
@@ -367,43 +361,22 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" on
         w = m * self.boxWidth
         h = self.boxHeight
             
-        f.write('<g stroke="gray" stroke-width="0.4">\n')
         self.writeLine(x, y, x + w, y)
         self.writeLine(x, y + h, x + w, y + h)
         self.writeLine(x, y, x, y + h)
         self.writeLine(x + m * self.nameWidth, y, x + m * self.nameWidth, y + h)
         self.writeLine(x + m * (self.nameWidth + self.playWidth), y, x + m * (self.nameWidth + self.playWidth), y + h)
         self.writeLine(x + w, y, x + w, y + h)
-        f.write('</g>\n\n')
-
-    def writePitcher(self, team, name) :
-        f = self.imgFileTmp
-        f.write('<g stroke="black">\n')
-        w = self.boxWidth
-        h = self.boxHeight
-
-        # A team's pitcher abuts the other team's box
-        if team == "A" :
-            x = self.homeX - self.boxWidth - self.pitcherBuf
-            y = self.homeY
-            rot = 270
-        else :
-            x = self.awayX + self.boxWidth + self.pitcherBuf
-            y = self.awayY
-            rot = 90
-        
-        self.writeLine(x - 5, y, x + 5, y)
-        self.writeLine(x - 5, y + h, x + 5, y + h)
-        self.writeLine(x, y, x, y + (h - 100) / 2)
-        self.writeLine(x, y + 100 + (h - 100) / 2, x, y + h)
-        f.write('</g>\n\n')
-        if team == "A" :
-            x = x + 5
-        else :
-            x = x - 5
-        self.writeText(name, x, y + h / 2, rot=rot, anchor="middle")
+        f.write('\n\n')
     
-    def writeBatter(self, team, name, play, result, desc, base=0, error=False) :
+    def writeBatter(self, team, b, base=0, error=False):
+        
+        name = b.name
+        play = b.code
+        result = b.result
+        desc = b.desc
+        willScore = b.willScore
+        
         if not base :
             base = 0
         if team == "A" :
@@ -422,15 +395,26 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" on
         x += m * self.nameWidth
         if base > 0 :
             x2 = x + m * self.bases[base]
-            self.imgFileTmp.write('<g stroke="black">\n')
+
+            if willScore == True:
+                color = 'black'
+                sw = '2'
+            else:
+                color = 'gray'
+                sw = '1'
+
             if error :
                 xmid = (x + x2) / 2
-                self.writeLine(x, y + 2, xmid - m * 4, y + 2)
-                self.writeLine(xmid + m * 4, y + 2, x2, y + 2)
+                self.writeLine(x, y + 2, xmid - m * 4, y + 2, color, sw)
+                self.writeLine(xmid + m * 4, y + 2, x2, y + 2, color, sw)
             else :
-                self.writeLine(x, y + 2, x2, y + 2)
-            self.writeCircle(x2, y + 2, 3)
-            self.imgFileTmp.write('</g>\n')
+                self.writeLine(x, y + 2, x2, y + 2, color, sw)
+                
+            if base == 4:
+                self.writeCircle(x2, y + 2, 3, color)
+            else:
+                self.writeCircle(x2, y + 2, 2, color)
+
             if error :
                 self.writeText("E", xmid, y + 4, anchor="middle", size="8")
                 
@@ -456,7 +440,16 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" on
             
         self.writeText(play, x, y, anchor="middle", color=color, weight=weight, desc=desc, flip=flip)
 
-    def advanceRunner(self, team, fromBase, toBase, safe=True, error=False) :
+    def advanceRunner(self, team, e, error=False, duringAB=False):
+        
+        fromBase_in = e.fromBase
+        toBase_in = e.toBase
+        safe = not e.out
+        willScore = e.willScore        
+        
+        toBase = int(toBase_in[0])
+        fromBase = int(fromBase_in[0])
+        
         if team == "A" :
             x = self.awayX
             y2 = self.curAwayBatter + 2
@@ -466,76 +459,72 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" on
             y2 = self.curHomeBatter + 2
             m = -1
         x += m * self.nameWidth
-        self.imgFileTmp.write('<g stroke="black">\n')
+
         x1 = x + m * self.bases[fromBase]
         x2 = x + m * self.bases[toBase]
         y1 = y2 - self.batterHeight
-        if not safe :
-            x2 -= m * self.baseWidth / 2
-            y2 -= self.batterHeight / 2
+        
+        if duringAB == True:
+            if toBase_in[1] == 'X':
+                y1 = y2
+                y2 = y1 + self.batterHeight / 2
+            if fromBase_in[1] == 'X':
+                y1 = y2
+        else:
+            if fromBase_in[1] == 'X':
+                y1 += self.batterHeight / 2
+                
+        
+        if willScore == True:
+            color = 'black'
+            sw = '2'
+        else:
+            color = 'gray'
+            sw = '1'
+        
         if not error :
-            self.writeLine(x1, y1, x2, y2)
+            self.writeLine(x1, y1, x2, y2, color, sw)
         else :
             xmid = (x1 + x2) / 2
             ymid = (y1 + y2) / 2
-            self.writeLine(x1, y1, xmid - m * 3, ymid + 3)
-            self.writeLine(xmid + m * 3, ymid - 3, x2, y2)
+            self.writeLine(x1, y1, xmid - m * 3, ymid + 3, color, sw)
+            self.writeLine(xmid + m * 3, ymid - 3, x2, y2, color, sw)
         if safe :
-            self.writeCircle(x2, y2, 3)
+            if toBase == 4:
+                self.writeCircle(x2, y2, 3)
+            else:
+                if willScore == True:
+                    self.writeCircle(x2, y2, 2)
+                else:
+                    self.writeCircle(x2, y2, 2, 'gray')
         else :
             self.writeX(x2, y2)
-        self.imgFileTmp.write('</g>\n')
+
         if error :
             self.writeText("E", xmid, ymid + 4, anchor="middle", size=8)
-            
-    def steal(self, team, fromBase, toBase, safe=True) :
-        if team == "A" :
-            x = self.awayX
-            y2 = self.curAwayBatter + 2
-            m = 1
-        else :
-            x = self.homeX
-            y2 = self.curHomeBatter + 2
-            m = -1
-        x += m * self.nameWidth
-        self.imgFileTmp.write('<g stroke="black">\n')
-        x1 = x + m * self.bases[fromBase]
-        x2 = x + m * self.bases[toBase]
-        y1 = y2 - self.batterHeight
-        if not safe :
-            x2 -= m * self.baseWidth / 2
-            y2 -= self.batterHeight / 2
-        self.writeLine(x1, y1, x1, y1 + self.batterHeight / 2)
-        self.writeLine(x2, y2, x2, y1 + self.batterHeight / 2)
-        if safe :
-            self.writeCircle(x2, y2, 3)
-        else :
-            self.writeX(x2, y2)
-        self.imgFileTmp.write('</g>\n')
-        self.writeText("S", (x1 + x2) / 2, ((y1 + y2) / 2) + 4, anchor="middle", size=8)
         
-    def endInning(self) :
+    def endInning(self):
         self.homeHash = self.curHomeBatter + 2
         if self.curHomeBatter > self.curAwayBatter :
             self.curAwayBatter = self.curHomeBatter
         else :
             self.curHomeBatter = self.curAwayBatter
         y = self.curHomeBatter + 2
-        self.imgFileTmp.write('<g stroke="gray" stroke-width="0.4">\n')
-        self.writeLine(self.awayX + self.nameWidth, y, self.awayX + self.boxWidth, y)
-        self.writeLine(self.homeX - self.nameWidth, y, self.homeX - self.boxWidth, y)
-        self.imgFileTmp.write('</g>\n\n')
+
+        self.writeLine(self.awayX + self.nameWidth, y, self.awayX + self.boxWidth, y, 'gray', '.4')
+        self.writeLine(self.homeX - self.nameWidth, y, self.homeX - self.boxWidth, y, 'gray', '.4')
+
         self.writeText(str(self.inning), (self.awayX + self.homeX)/2, (y + self.lastInningY)/2+2.5, anchor="middle", color="blue", weight="bold")
         self.inning = self.inning + 1
         self.lastInningY = y
         
-    def getCurBatter(self, team):
+    def getCurBatter(self, team, batters=0):
         if team == "A":
-            return self.curAwayBatter
+            return self.curAwayBatter + self.batterHeight*batters
         elif team == "H":
-            return self.curHomeBatter
+            return self.curHomeBatter + self.batterHeight*batters
         
-    def tmp(self) :
+    def tmp(self):
         f = self.imgFileTmp
 
 #        f.write('<!-- Away Box -->\n')
@@ -642,7 +631,6 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" on
         
         self.writeBatter("A", "J. Rollins", "W", 1)
         self.writeBatter("A", "S. Victorino", "W", 1)
-        self.steal("A", 1, 2)
         self.writeBatter("A", "C. Utley", "K")
         self.advanceRunner("A", 1, 1)
         self.advanceRunner("A", 2, 2)

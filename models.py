@@ -6,12 +6,14 @@ class Player(db.Model) :
     last = db.StringProperty()
     
 class Batter():
-    def __init__(self, id, code, result, desc):
+    def __init__(self, id, code, result, desc, willScore=False):
         self.id = id # from MLB XML
+        self.name = id
         self.code = code # F7, L8, G6, etc.
         self.result = result # ERROR, HIT, OTHER, OUT (const.py)
         self.desc = desc
         self.events = [] # list of events, indexed by actionCount.  if no event @ an index, use None
+        self.willScore = willScore
  
     def advance(self, actionCount, code, toBase, out):
         # update onBase and add an event to events at index actionCount

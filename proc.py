@@ -83,10 +83,11 @@ class procMLB(saxutils.handler.ContentHandler):
             if e == 'Pitching Substitution':                  
                 # look up pitcherID
                 self.updatePitcher(attrs.get('player'))
+                batters = len(self.inningState.batters)
                 if self.curTeam == "A":
-                    self.homePitchers.append([self.pitcher, self.box.getCurBatter("A")])
+                    self.homePitchers.append([self.pitcher, self.box.getCurBatter("A", batters)])
                 elif self.curTeam == "H":
-                    self.awayPitchers.append([self.pitcher, self.box.getCurBatter("H")])
+                    self.awayPitchers.append([self.pitcher, self.box.getCurBatter("H", batters)])
             if e == 'Relief with No Outs':
                 self.reliefNoOutsFlag = True
             if e == 'Offensive sub':
@@ -96,6 +97,7 @@ class procMLB(saxutils.handler.ContentHandler):
                     self.pinchRunnerID = attrs.get('player')
                 
         elif (name == 'atbat'):
+            batters = len(self.inningState.batters)
             # Inefficient IF's, should just get the starting pitcher somewhere else
             if self.homePitchers == [] and self.curTeam == "A":
                 self.updatePitcher(attrs.get('pitcher'))
@@ -107,10 +109,10 @@ class procMLB(saxutils.handler.ContentHandler):
                 self.reliefNoOutsFlag = False
                 if self.curTeam == "A":
                     self.updatePitcher(attrs.get('pitcher'))
-                    self.homePitchers.append([self.pitcher, self.box.getCurBatter("A")])
+                    self.homePitchers.append([self.pitcher, self.box.getCurBatter("A", batters)])
                 elif self.curTeam == "H":
                     self.updatePitcher(attrs.get('pitcher'))
-                    self.awayPitchers.append([self.pitcher, self.box.getCurBatter("H")])                    
+                    self.awayPitchers.append([self.pitcher, self.box.getCurBatter("H", batters)])                    
 
             self.outs = int(attrs.get('o'))
             self.desc = self.desc + attrs.get('des')
@@ -140,11 +142,11 @@ class procMLB(saxutils.handler.ContentHandler):
                     btr = btrs.fetch(1)[0]
                 # Cache the batter to save future trips to the db
                 self.batters[batterID] = btr
-            if not self.offline :
-                self.batterName = btr.first[0] + ". " + btr.last
             
             # Create a Batter object to be added at the end of the <atbat> tag.
             self.batterObj = self.inningState.createBatter(batterID, code, result, self.desc)
+            if not self.offline:
+                self.batterObj.name = btr.first[0] + ". " + btr.last
         
         elif (name == 'pitch' and self.inningState.runnerStack != {}):
               self.inningState.actionCount += 1
@@ -192,17 +194,19 @@ class procMLB(saxutils.handler.ContentHandler):
                 code = 'POCS'
                 if attrs.get('end') == '':
                     out = True      
-            mtch = re.search('Pickoff', event)
-            if mtch:
-                code = 'PO'
-                if attrs.get('end') == '':
-                    out = True
+            #mtch = re.search('Pickoff', event)
+            #if mtch:
+            #    code = 'PO'
+            #    if attrs.get('end') == '':
+            #        out = True
             mtch = re.search('Pickoff Error', event)
             if mtch:
                 code = 'E'
-            mtch = re.search('Pickoff Attempt', event)
-            if mtch:
-                code = ''                                                                           
+                out = False
+            #mtch = re.search('Pickoff Attempt', event)
+            #if mtch:
+            #    code = ''
+            #    out = False                                                                           
             mtch = re.search('Stolen Base', event)
             if mtch:
                 code = 'SB'
