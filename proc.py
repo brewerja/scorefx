@@ -119,7 +119,7 @@ class procMLB(saxutils.handler.ContentHandler):
             (code, result) = self.parsePlay(attrs.get('des'))
             self.batterEvent = attrs.get('event')
             if self.batterEvent == 'Runner Out':
-                code = ''
+                code = '--'
             
             # look up batterID
             batterID = attrs.get('batter')
@@ -197,7 +197,9 @@ class procMLB(saxutils.handler.ContentHandler):
             if mtch:
                 code = 'POCS'
                 if attrs.get('end') == '':
-                    out = True      
+                    out = True
+                    if self.outs == 3:
+                        toBase = str(bases[fromBase]+1)+'B'
             #mtch = re.search('Pickoff', event)
             #if mtch:
             #    code = 'PO'
@@ -238,7 +240,7 @@ class procMLB(saxutils.handler.ContentHandler):
             # if there is not a runner tag for the batter, then you don't need the extra stuff
             if self.noBatterRunner == True:
                 self.inningState.addBatter(self.batterObj)
-                if self.batterObj.code == '':
+                if self.batterObj.code == '--':
                     #self.inningState.atbats.pop(self.inningState.actionCount)
                     self.inningState.advRunners(duringAB = True)
                 else:
