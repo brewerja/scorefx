@@ -118,6 +118,8 @@ class procMLB(saxutils.handler.ContentHandler):
             self.desc = self.desc + attrs.get('des')
             (code, result) = self.parsePlay(attrs.get('des'))
             self.batterEvent = attrs.get('event')
+            if self.batterEvent == 'Runner Out':
+                code = ''
             
             # look up batterID
             batterID = attrs.get('batter')
@@ -180,6 +182,8 @@ class procMLB(saxutils.handler.ContentHandler):
                 code = 'CS'
                 if attrs.get('end') == '':
                     out = True
+                    if self.outs == 3:
+                        toBase = str(bases[fromBase]+1)+'B'
             mtch = re.search('Defensive Indiff', event)
             if mtch:
                 code = 'DI'
@@ -234,7 +238,11 @@ class procMLB(saxutils.handler.ContentHandler):
             # if there is not a runner tag for the batter, then you don't need the extra stuff
             if self.noBatterRunner == True:
                 self.inningState.addBatter(self.batterObj)
-                self.inningState.advRunners()
+                if self.batterObj.code == '':
+                    #self.inningState.atbats.pop(self.inningState.actionCount)
+                    self.inningState.advRunners(duringAB = True)
+                else:
+                    self.inningState.advRunners()
             self.noBatterRunner = True
               
         if name == 'top' or name == 'bottom':

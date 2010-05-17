@@ -48,6 +48,18 @@ class BoxScore :
                     toBase = 0                 
                 self.writeBatter(inningState.team, b, toBase)
                 
+                if e.code == '':
+                    for b in inningState.batters:
+                        e = b.eventAt(i)
+                        if e != None:                                               
+                            if e.type == 'RunnerAdvance':
+                                if inningState.team == 'A':
+                                    self.curAwayBatter -= self.batterHeight
+                                elif inningState.team == 'H':
+                                    self.curHomeBatter -= self.batterHeight
+                                self.advanceRunner(inningState.team, e, duringAB=True)
+                    break
+                
                 for b in inningState.batters:
                     e = b.eventAt(i)
                     if e != None:                                               
