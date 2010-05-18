@@ -46,10 +46,10 @@ class Event:
 class InningState:
     def __init__(self):
         self.actionCount = -1
-        self.batters = []
-        self.onBase = {}
-        self.runnerStack = {}
-        self.atbats = {}
+        self.batters = [] # Ordered list of the batters appearing in the inning.
+        self.onBase = {} # Dict of id:Batter pairs of who is on base at a given time.
+        self.runnerStack = {} # Dict of id:Batter pairs of runners to be advanced after the batter.
+        self.atbats = {} # Dict of actionCount:index in self.batters.
 
     def createBatter(self, id, code, result, desc):
         return Batter(id, code, result, desc)
@@ -70,8 +70,7 @@ class InningState:
             self.onBase[batterObj.id] = batterObj
         return batterObj
     
-    def advRunners(self, duringAB=False):
-        
+    def advRunners(self, duringAB=False, endAB=False): 
         if duringAB == False:
             # Hold runners who are already on base, but who did not move.
             for key, runnerObj in self.onBase.items():
@@ -86,6 +85,8 @@ class InningState:
                     self.addRunner(runnerObj, toBase)        
         
         if duringAB == True:
+            if not endAB:
+                self.actionCount += 1
             for key, r in self.runnerStack.items():
                 toBase = r.toBase
                 if toBase == Base.SECOND:

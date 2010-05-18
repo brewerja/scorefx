@@ -69,7 +69,14 @@ class GameChooser(webapp.RequestHandler) :
 
         games = []
         for game in re.findall('href="(gid.*?)"', data) :
-            games.append(Game(game.rstrip('/'), teams[game.split("_")[4][:3]], teams[game.split("_")[5][:3]]))
+            away = game.split("_")[4][:3]
+            if 'mlb' in away:
+                away = away[0:3]
+            home = game.split("_")[5][:3]
+            if 'mlb' in home:
+                home = home[0:3]
+            if away in teams and home in teams:
+                games.append(Game(game.rstrip('/'), teams[away], teams[home]))
 
         template_values = {'games' : games,
                            'year' : y,

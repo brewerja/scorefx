@@ -48,11 +48,26 @@ class BoxScore :
                     toBase = 0                 
                 self.writeBatter(inningState.team, b, toBase)
                 
+                # This is an inning ending 'Runner Out'.
+                if b.code == '--':
+                    duringAB = True
+                    if inningState.team == 'A':
+                        self.curAwayBatter -= self.batterHeight
+                    elif inningState.team == 'H':
+                        self.curHomeBatter -= self.batterHeight
+                else:
+                    duringAB = False
+                    
                 for b in inningState.batters:
                     e = b.eventAt(i)
                     if e != None:                                               
                         if e.type == 'RunnerAdvance':
-                            self.advanceRunner(inningState.team, e)
+                            self.advanceRunner(inningState.team, e, duringAB=duringAB)
+                            if duringAB:
+                                if inningState.team == 'A':
+                                    self.curAwayBatter += self.batterHeight
+                                elif inningState.team == 'H':
+                                    self.curHomeBatter += self.batterHeight
             else:
                 for b in inningState.batters:
                     e = b.eventAt(i)
@@ -482,14 +497,15 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" on
             color = 'gray'
             sw = '1'
         
-        if not error :
-            self.writeLine(x1, y1, x2, y2, color, sw)
-        else :
-            xmid = (x1 + x2) / 2
-            ymid = (y1 + y2) / 2
-            self.writeLine(x1, y1, xmid - m * 3, ymid + 3, color, sw)
-            self.writeLine(xmid + m * 3, ymid - 3, x2, y2, color, sw)
+
         if safe :
+            if not error :
+                self.writeLine(x1, y1, x2, y2, color, sw)
+            else :
+                xmid = (x1 + x2) / 2
+                ymid = (y1 + y2) / 2
+                self.writeLine(x1, y1, xmid - m * 3, ymid + 3, color, sw)
+                self.writeLine(xmid + m * 3, ymid - 3, x2, y2, color, sw)            
             if toBase == 4:
                 self.writeCircle(x2, y2, 3)
             else:
@@ -498,7 +514,15 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" on
                 else:
                     self.writeCircle(x2, y2, 2, 'gray')
         else :
-            self.writeX(x2, y2)
+            slope = m*float(y2 - y1)/float(x2 - x1)
+            if not error :
+                self.writeLine(x1, y1, x2 - m*4/slope, y2 - 4, color, sw)
+            else :
+                xmid = (x1 + x2) / 2
+                ymid = (y1 + y2) / 2
+                self.writeLine(x1, y1, xmid - m * 3, ymid + 3, color, sw)
+                self.writeLine(xmid + m * 3, ymid - 3, x2, y2, color, sw)             
+            self.writeX(x2 - m*4/slope, y2 - 4)
 
         if error :
             self.writeText("E", xmid, ymid + 4, anchor="middle", size=8)
@@ -523,9 +547,3 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" on
             return self.curAwayBatter + self.batterHeight*batters
         elif team == "H":
             return self.curHomeBatter + self.batterHeight*batters
-
-if __name__ == "__main__" :
-    f = open("box.svg", "w")
-    t = BoxScore(f)
-    t.tmp()
-    f.close()
