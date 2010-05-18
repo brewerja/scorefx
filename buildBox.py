@@ -108,12 +108,12 @@ class BoxScore :
 
     def writeX(self, x, y) :
         # Write an X centered at x, y
-        x1 = x - 2
-        x2 = x + 2
-        y1 = y - 2
-        y2 = y + 2
-        self.writeLine(x - 2, y - 2, x + 2, y + 2, 'gray')
-        self.writeLine(x - 2, y + 2, x + 2, y - 2, 'gray')
+        x1 = x - 3
+        x2 = x + 3
+        y1 = y - 3
+        y2 = y + 3
+        self.writeLine(x1, y1, x2, y2, 'gray')
+        self.writeLine(x1, y2, x2, y1, 'gray')
 
     def startBox(self) :
         f = self.imgFileTmp
