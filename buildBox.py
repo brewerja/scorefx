@@ -4,7 +4,7 @@ import tempfile
 import const
 
 class BoxScore :
-    nameWidth = 100
+    nameWidth = 110
     playWidth = 20
     baseWidth = 20
     runnersWidth = 4 * baseWidth
