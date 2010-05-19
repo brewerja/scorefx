@@ -386,28 +386,6 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" on
         f.seek(0)
         img.write(f.read())
         f.close()
-
-    def writeBox(self, team) :
-        f = self.imgFileTmp
-        if team == "A" :
-            x = self.awayX
-            y = self.awayY
-            m = 1
-        else :
-            x = self.homeX
-            y = self.homeY
-            m = -1
-
-        w = m * self.boxWidth
-        h = self.boxHeight
-            
-        self.writeLine(x, y, x + w, y)
-        self.writeLine(x, y + h, x + w, y + h)
-        self.writeLine(x, y, x, y + h)
-        self.writeLine(x + m * self.nameWidth, y, x + m * self.nameWidth, y + h)
-        self.writeLine(x + m * (self.nameWidth + self.playWidth), y, x + m * (self.nameWidth + self.playWidth), y + h)
-        self.writeLine(x + w, y, x + w, y + h)
-        f.write('\n\n')
     
     def writeBatter(self, team, b, base=0, error=False):
         
@@ -551,7 +529,7 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" on
         if error :
             self.writeText("E", xmid, ymid + 4, anchor="middle", size=8)
         
-    def endInning(self):
+    def endInning(self, gameOver=False):
         self.homeHash = self.curHomeBatter + 2
         if self.curHomeBatter > self.curAwayBatter :
             self.curAwayBatter = self.curHomeBatter
@@ -559,8 +537,9 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" on
             self.curHomeBatter = self.curAwayBatter
         y = self.curHomeBatter + 2
 
-        self.writeLine(self.awayX + self.nameWidth, y, self.awayX + self.boxWidth, y, 'gray', '.4')
-        self.writeLine(self.homeX - self.nameWidth, y, self.homeX - self.boxWidth, y, 'gray', '.4')
+        if not gameOver:
+            self.writeLine(self.awayX + self.nameWidth, y, self.awayX + self.boxWidth, y, 'gray', '.4')
+            self.writeLine(self.homeX - self.nameWidth, y, self.homeX - self.boxWidth, y, 'gray', '.4')
 
         self.writeText(str(self.inning), (self.awayX + self.homeX)/2, (y + self.lastInningY)/2+2.5, anchor="middle", color="blue", weight="bold")
         self.inning = self.inning + 1

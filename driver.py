@@ -120,7 +120,10 @@ class BuildScorecard(webapp.RequestHandler) :
             f = urlopen(url + '/inning/inning_' + str(i) + '.xml')
             parser.parse(f)
             f.close()
-            box.endInning()
+            if i == len(re.findall('"inning_\d+\.xml"', s)):
+                box.endInning(gameOver=True)
+            else:
+                box.endInning()
         box.endBox(p.homePitchers, p.awayPitchers)
 
         
