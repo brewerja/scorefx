@@ -118,6 +118,7 @@ class procMLB(saxutils.handler.ContentHandler):
                 code = '--'
             
             batterID = attrs.get('batter')
+            self.desc = self.desc.strip().replace('.    ', '. ').replace('.  ', '. ')
             # Create a Batter object to be added at the end of the <atbat> tag.
             self.batterObj = self.inningState.createBatter(batterID, code, result, self.desc)
             # look up batterID

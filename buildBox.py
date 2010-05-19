@@ -89,6 +89,7 @@ class BoxScore :
                     if e != None:                                               
                         if e.type == 'RunnerAdvance':
                             self.advanceRunner(inningState.team, e, duringAB=True)
+        f.write('\n')
 
         
     def writeLine(self, x1, y1, x2, y2, color='black', sw='1') :
@@ -135,42 +136,16 @@ class BoxScore :
         x = self.awayX
         y = self.awayY
         w = self.boxWidth
-        self.writeLine(x, y, x + w, y, 'black', '.4')
+        self.writeLine(x, y, x + w, y, 'gray', '.4')
 
         # Start the home box
         x = self.homeX
         y = self.homeY
         self.writeLine(x, y, x - w, y, 'gray', '.4')
-
-        f.write('\n\n')
         
     def endBox(self, homePitchers, awayPitchers) :
         f = self.imgFileTmp
-
         h = self.curHomeBatter - self.homeY + 2
-
-        # End the away box
-        x = self.awayX
-        y = self.awayY
-        m = 1
-        w = m * self.boxWidth
-        self.writeLine(x, y + h, x + w, y + h, 'gray', '.4')
-        self.writeLine(x, y, x, y + h, 'gray', '.4')
-        self.writeLine(x + m * self.nameWidth, y, x + m * self.nameWidth, y + h, 'gray', '.4')
-        self.writeLine(x + m * (self.nameWidth + self.playWidth), y, x + m * (self.nameWidth + self.playWidth), y + h, 'gray', '.4')
-        self.writeLine(x + w, y, x + w, y + h, 'gray', '.4')
-        
-        x = self.homeX
-        y = self.homeY
-        m = -1
-        w = m * self.boxWidth
-        self.writeLine(x, y + h, x + w, y + h, 'gray', '.4')
-        self.writeLine(x, y, x, y + h, 'gray', '.4')
-        self.writeLine(x + m * self.nameWidth, y, x + m * self.nameWidth, y + h, 'gray', '.4')
-        self.writeLine(x + m * (self.nameWidth + self.playWidth), y, x + m * (self.nameWidth + self.playWidth), y + h, 'gray', '.4')
-        self.writeLine(x + w, y, x + w, y + h, 'gray', '.4')
-        
-        f.write('\n\n')
         
         # Draw Pitchers
         f.write('<g id="hashMarks" style="stroke:black; stroke-width:1;">\n')
@@ -194,7 +169,7 @@ class BoxScore :
         #self.writeLine(x - 5, self.homeY + h, x + 5, self.homeY + h)
         self.writeLine(x - 5, self.homeHash, x + 5, self.homeHash)
         
-        f.write('</g>\n')  
+        f.write('</g>\n\n')  
         
         # Draw in the names of the pitchers, homePitchers first
         x = self.awayX + self.boxWidth + self.pitcherBuf
@@ -218,7 +193,7 @@ class BoxScore :
         y = (awayPitchers[-1][1] + self.homeHash) / 2
         self.writeText(str(awayPitchers[-1][0]), x + 5, y + 1, rot=270, anchor="middle", id="awayP" + str(len(awayPitchers) - 1))      
 
-        f.write('</svg>\n')
+        f.write('\n</svg>\n')
 
         # Now that we know the image's height, we can write the SVG header
         img = self.imgFile
@@ -230,7 +205,7 @@ class BoxScore :
 <svg width="''' + str(self.homeX + 1) + '" height="' + str(h + 2 * self.boxBuffer) + '''" version="1.1"
 xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" onload="init(evt)">
 ''')
-        img.write('\n\n')
+        img.write('\n')
         
         # Begin the JavaScript portion of the file
         img.write('<script type="text/ecmascript"><![CDATA[\n')
@@ -288,7 +263,7 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" on
         img.write('\n    drawPitchers(a_nameWidths, a_hashWidths, a_yName, a_yHash, ' + str(len(awayPitchers)) + ', "awayP", ' + str(self.homeX - self.boxWidth - self.pitcherBuf) + ', ' + str(self.homeHash) + ')\n')        
         img.write('}\n\n')
         
-        img.write('function drawPitchers(nameWidths, hashWidths, yName, yHash, numP, tagPrefix, xLoc, yBottom){\n')
+        img.write('function drawPitchers(nameWidths, hashWidths, yName, yHash, numP, tagPrefix, xLoc, yBottom) {\n')
         img.write('    levelHeight = 12\n')
         img.write('    curLevel = new Array()\n')
         img.write('    curLevelWidths = new Array()\n\n')
@@ -369,6 +344,43 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" on
     }\n''')
 
         img.write('}\n]]></script>\n\n')
+        
+        #SWITCH!
+        saveTmp = self.imgFileTmp
+        self.imgFileTmp = img
+        f = img
+        
+        f.write('<g id="boxOutline">\n')
+        
+        self.startBox()
+        h = self.curHomeBatter - self.homeY + 2
+
+        # End the away box
+        x = self.awayX
+        y = self.awayY
+        m = 1
+        w = m * self.boxWidth
+        self.writeLine(x, y + h, x + w, y + h, 'gray', '.4')
+        self.writeLine(x, y, x, y + h, 'gray', '.4')
+        self.writeLine(x + m * self.nameWidth, y, x + m * self.nameWidth, y + h, 'gray', '.4')
+        self.writeLine(x + m * (self.nameWidth + self.playWidth), y, x + m * (self.nameWidth + self.playWidth), y + h, 'gray', '.4')
+        self.writeLine(x + w, y, x + w, y + h, 'gray', '.4')
+        
+        x = self.homeX
+        y = self.homeY
+        m = -1
+        w = m * self.boxWidth
+        self.writeLine(x, y + h, x + w, y + h, 'gray', '.4')
+        self.writeLine(x, y, x, y + h, 'gray', '.4')
+        self.writeLine(x + m * self.nameWidth, y, x + m * self.nameWidth, y + h, 'gray', '.4')
+        self.writeLine(x + m * (self.nameWidth + self.playWidth), y, x + m * (self.nameWidth + self.playWidth), y + h, 'gray', '.4')
+        self.writeLine(x + w, y, x + w, y + h, 'gray', '.4')
+
+        f.write('</g>\n\n')
+        
+        # SWITCH BACK!
+        self.imgFileTmp = saveTmp
+        f = self.imgFileTmp        
 
         # Then we back up to the start of the tempfile and write it's contents to the image file
         f.seek(0)
@@ -553,6 +565,8 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" on
         self.writeText(str(self.inning), (self.awayX + self.homeX)/2, (y + self.lastInningY)/2+2.5, anchor="middle", color="blue", weight="bold")
         self.inning = self.inning + 1
         self.lastInningY = y
+        f = self.imgFileTmp
+        f.write('\n')
         
     def getCurBatter(self, team, batters=0):
         if team == "A":

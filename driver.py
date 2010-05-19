@@ -102,7 +102,6 @@ class BuildScorecard(webapp.RequestHandler) :
 
         self.response.headers['Content-type'] = 'image/svg+xml'
         box = BoxScore(self.response.out)
-        box.startBox()
     
         # Create a parser
         parser = make_parser()

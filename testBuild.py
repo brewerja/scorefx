@@ -28,7 +28,6 @@ if __name__ == '__main__' :
 
     img = open("test.svg", "w")
     box = BoxScore(img)
-    box.startBox()
     
     parser = make_parser()
     parser.setFeature(feature_namespaces, 0)
