@@ -204,7 +204,7 @@ class procMLB(saxutils.handler.ContentHandler):
             self.noBatterRunner = True
               
         if name == 'top' or name == 'bottom':
-            self.inningState.team = self.curTeam      
+            self.inningState.team = self.curTeam
             self.box.drawInning(self.inningState)
             self.inningState = InningState()
           

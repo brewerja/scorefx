@@ -63,7 +63,6 @@ class BoxScore :
                         self.curHomeBatter -= self.batterHeight
                 else:
                     duringAB = False
-                
 
                 for b in inningState.batters:
                     e = b.eventAt(i)
@@ -94,14 +93,14 @@ class BoxScore :
         
     def writeLine(self, x1, y1, x2, y2, color='black', sw='1') :
         f = self.imgFileTmp
-        f.write('<line x1="' + str(x1) + '" y1="' + str(y1) + '" x2="' + str(x2) + '" y2="' + str(y2) + '" style="stroke:' + color + '; stroke-width:' + sw + ';"/>\n')
+        f.write(' <line x1="' + str(x1) + '" y1="' + str(y1) + '" x2="' + str(x2) + '" y2="' + str(y2) + '" style="stroke:' + color + '; stroke-width:' + sw + ';"/>\n')
 
     def writeText(self, txt, x, y, rot=0, rx= -1, ry= -1, anchor=None, size=10, color="black", weight="normal", flip=False, id=None) :
         f = self.imgFileTmp
         if (flip == True):
-            f.write('<text x="0" y="0" transform="matrix(-1 0 0 1 ' + str(x) + ' ' + str(y) + ')" ')
+            f.write(' <text x="0" y="0" transform="matrix(-1 0 0 1 ' + str(x) + ' ' + str(y) + ')" ')
         else:
-            f.write('<text x="' + str(x) + '" y="' + str(y) + '"')
+            f.write(' <text x="' + str(x) + '" y="' + str(y) + '"')
         if (rot > 0) :
             if rx == -1 :
                 rx = x
@@ -118,7 +117,7 @@ class BoxScore :
 
     def writeCircle(self, x, y, r, color='black') :
         f = self.imgFileTmp
-        f.write('<circle cx="' + str(x) + '" cy="' + str(y) + '" r="' + str(r) + '" style="stroke:' + color + '; fill:' + color + ';"/>\n')
+        f.write(' <circle cx="' + str(x) + '" cy="' + str(y) + '" r="' + str(r) + '" style="stroke:' + color + '; fill:' + color + ';"/>\n')
 
     def writeX(self, x, y) :
         # Write an X centered at x, y
@@ -393,9 +392,7 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" on
         play = b.code
         result = b.result
         willScore = b.willScore
-        
-        if not base :
-            base = 0
+
         if team == "A" :
             x = self.awayX
             m = 1
