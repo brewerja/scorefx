@@ -64,6 +64,7 @@ class procMLB(saxutils.handler.ContentHandler):
         self.batters = dict()
         self.pitchers = dict()
         self.offline = False
+        self.pitcher = ''
         
     def startElement(self, name, attrs):
         if (name == 'top'):
@@ -76,14 +77,8 @@ class procMLB(saxutils.handler.ContentHandler):
             self.desc += attrs.get('des')
             
             e = attrs.get('event')
-            if e == 'Pitching Substitution':                  
-                # look up pitcherID
+            if e == 'Pitching Substitution':
                 self.updatePitcher(attrs.get('player'))
-                batters = len(self.inningState.batters)
-                if self.curTeam == "A":
-                    self.homePitchers.append([self.pitcher, self.box.getCurBatter("A", batters)])
-                elif self.curTeam == "H":
-                    self.awayPitchers.append([self.pitcher, self.box.getCurBatter("H", batters)])
             if e == 'Relief with No Outs':
                 self.reliefNoOutsFlag = True
             if e == 'Offensive sub':
@@ -93,22 +88,11 @@ class procMLB(saxutils.handler.ContentHandler):
                     self.pinchRunnerID = attrs.get('player')
                 
         elif (name == 'atbat'):
-            # Inefficient IF's, should just get the starting pitcher somewhere else
-            if not self.homePitchers and self.curTeam == "A":
+            # Get the starting pitcher or a pitcher relieving one who hasn't put anyone out.
+            if self.reliefNoOutsFlag == True or \
+               (not self.homePitchers and self.curTeam == "A") or \
+               (not self.awayPitchers and self.curTeam == "H"):
                 self.updatePitcher(attrs.get('pitcher'))
-                self.homePitchers.append([self.pitcher, self.box.getCurBatter("A")])
-            elif not self.awayPitchers and self.curTeam == "H":
-                self.updatePitcher(attrs.get('pitcher'))
-                self.awayPitchers.append([self.pitcher, self.box.getCurBatter("H")])
-            
-            batters = len(self.inningState.batters)
-            if self.reliefNoOutsFlag == True:
-                if self.curTeam == "A":
-                    self.updatePitcher(attrs.get('pitcher'))
-                    self.homePitchers.append([self.pitcher, self.box.getCurBatter("A", batters)])
-                elif self.curTeam == "H":
-                    self.updatePitcher(attrs.get('pitcher'))
-                    self.awayPitchers.append([self.pitcher, self.box.getCurBatter("H", batters)])
                 self.reliefNoOutsFlag = False                    
 
             self.outs = int(attrs.get('o'))
@@ -390,7 +374,15 @@ class procMLB(saxutils.handler.ContentHandler):
             # Cache the pitcher to save future trips to the db
             self.pitchers[pitcherID] = p
         if not self.offline:
-            self.pitcher = p.first[0] + ". " + p.last 
+            self.pitcher = p.first[0] + ". " + p.last
+
+        batters = len(self.inningState.batters)
+        if self.curTeam == "A":
+            if not self.homePitchers or self.pitcher != self.homePitchers[-1][0]:
+                self.homePitchers.append([self.pitcher, self.box.getCurBatter("A", batters)])
+        elif self.curTeam == "H":
+            if not self.awayPitchers or self.pitcher != self.awayPitchers[-1][0]:
+                self.awayPitchers.append([self.pitcher, self.box.getCurBatter("H", batters)])            
             
     def updateBatter(self, batterID):
             if self.offline:

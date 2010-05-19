@@ -21,7 +21,7 @@ class Batter():
         self.onBase = toBase
         while len(self.events) < actionCount:
             self.events.append(None)
-        if (toBase == '4B' or toBase == '4X') and out == False:
+        if (toBase == Base.HOME or toBase == Base.HOME_M) and out == False:
             self.willScore = True
         e = Event("RunnerAdvance", code, fromBase, toBase, out)            
         self.events.append(e)
@@ -100,7 +100,7 @@ class InningState:
             runnerObj = self.onBase[key]
             runnerObj.advance(self.actionCount, r.code, r.toBase, r.out)
             # If a runners scores or is out on the play, take him off the bases.
-            if r.toBase == '4B' or r.toBase == '4X' or r.out == True:
+            if r.toBase == Base.HOME or r.toBase == Base.HOME_M or r.out == True:
                 self.onBase.pop(key)
         self.runnerStack = {}
             
