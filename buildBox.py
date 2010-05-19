@@ -37,7 +37,9 @@ class BoxScore :
         self.imgFileTmp = tempfile.TemporaryFile()
         
     def drawInning(self, inningState):
-        for i in range(0, inningState.actionCount+1):
+        f = self.imgFileTmp
+        runnersAlready = False
+        for i in range(0, inningState.actionCount+1):             
             if i in inningState.atbats:
                 batter_num = inningState.atbats[i]
                 b = inningState.batters[batter_num]
@@ -45,7 +47,11 @@ class BoxScore :
                 if e.toBase != '':
                     toBase = int(e.toBase[0])
                 else:
-                    toBase = 0                 
+                    toBase = 0        
+                      
+                if not runnersAlready:
+                    f.write('<g xlink:title="' + b.desc + '">\n')
+                runnersAlready = False
                 self.writeBatter(inningState.team, b, toBase)
                 
                 # This is an inning ending 'Runner Out'.
@@ -57,7 +63,8 @@ class BoxScore :
                         self.curHomeBatter -= self.batterHeight
                 else:
                     duringAB = False
-                    
+                
+
                 for b in inningState.batters:
                     e = b.eventAt(i)
                     if e != None:                                               
@@ -68,7 +75,15 @@ class BoxScore :
                                     self.curAwayBatter += self.batterHeight
                                 elif inningState.team == 'H':
                                     self.curHomeBatter += self.batterHeight
+                f.write('</g>\n')
             else:
+                runnersAlready = True
+                for j in range(i+1, inningState.actionCount+1):
+                    if j in inningState.atbats:
+                        batter_num = inningState.atbats[j]
+                        b = inningState.batters[batter_num]
+                        break
+                f.write('<g xlink:title="' + b.desc + '">\n')
                 for b in inningState.batters:
                     e = b.eventAt(i)
                     if e != None:                                               
@@ -80,7 +95,7 @@ class BoxScore :
         f = self.imgFileTmp
         f.write('<line x1="' + str(x1) + '" y1="' + str(y1) + '" x2="' + str(x2) + '" y2="' + str(y2) + '" style="stroke:' + color + '; stroke-width:' + sw + ';"/>\n')
 
-    def writeText(self, txt, x, y, rot=0, rx= -1, ry= -1, anchor=None, size=10, color="black", weight="normal", desc=None, flip=False, id=None) :
+    def writeText(self, txt, x, y, rot=0, rx= -1, ry= -1, anchor=None, size=10, color="black", weight="normal", flip=False, id=None) :
         f = self.imgFileTmp
         if (flip == True):
             f.write('<text x="0" y="0" transform="matrix(-1 0 0 1 ' + str(x) + ' ' + str(y) + ')" ')
@@ -96,8 +111,6 @@ class BoxScore :
             f.write(' text-anchor="' + anchor + '"')
         f.write(' fill="' + color + '"')
         f.write(' style="font-family:Arial; font-size: ' + str(size) + 'pt; font-weight:' + weight + ';"')
-        if desc != None:
-            f.write(' xlink:title="' + desc + '"')
         if id != None:
             f.write(' id="' + id + '"')
         f.write('>' + txt + '</text>\n')
@@ -389,7 +402,6 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" on
         name = b.name
         play = b.code
         result = b.result
-        desc = b.desc
         willScore = b.willScore
         
         if not base :
@@ -453,7 +465,7 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" on
             play = "K"
             flip = True
             
-        self.writeText(play, x, y, anchor="middle", color=color, weight=weight, desc=desc, flip=flip)
+        self.writeText(play, x, y, anchor="middle", color=color, weight=weight, flip=flip)
 
     def advanceRunner(self, team, e, error=False, duringAB=False):
         
