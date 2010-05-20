@@ -50,7 +50,7 @@ class BoxScore :
                     toBase = 0        
                       
                 if not runnersAlready:
-                    f.write('<g xlink:title="' + b.desc + '">\n')
+                    f.write('<g xlink:title="' + b.desc + '" onmouseover="highlight(this)" onmouseout="unhighlight(this)">\n')
                 runnersAlready = False
                 self.writeBatter(inningState.team, b, toBase)
                 
@@ -82,7 +82,7 @@ class BoxScore :
                         b = inningState.batters[batter_num]
                         break
                 if not runnersAlready:
-                    f.write('<g xlink:title="' + b.desc + '">\n')
+                    f.write('<g xlink:title="' + b.desc + '" onmouseover="highlight(this)" onmouseout="unhighlight(this)">\n')
                 runnersAlready = True                    
                 for b in inningState.batters:
                     e = b.eventAt(i)
@@ -341,7 +341,32 @@ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" on
         curLevel = nextLevel.slice(0)
         curLevel_Widths = nextLevelWidths.slice(0)
         nextLevel = []; nextLevelWidths = []
-    }\n''')
+    }
+}
+
+lineStyle = []
+circleStyle = []
+
+function highlight(src) {
+    lineArray = src.getElementsByTagName('line')
+    for (i=0; i<lineArray.length; i++){
+    lineStyle[i] = lineArray[i].getAttribute("style")
+        lineArray[i].setAttribute("style", "stroke:orange; stroke-width:3;")
+    }
+    circleArray = src.getElementsByTagName('circle')
+    for (i=0; i<circleArray.length; i++){
+    circleStyle[i] = circleArray[i].getAttribute("style")
+        circleArray[i].setAttribute("style", "stroke:orange; fill:orange;")
+    }
+}
+
+function unhighlight(src) {
+    lineArray = src.getElementsByTagName('line')
+    for (i=0; i<lineArray.length; i++)
+        lineArray[i].setAttribute("style", lineStyle[i])
+    circleArray = src.getElementsByTagName('circle')
+    for (i=0; i<circleArray.length; i++)
+        circleArray[i].setAttribute("style", circleStyle[i])\n''')
 
         img.write('}\n]]></script>\n\n')
         
