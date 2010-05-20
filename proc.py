@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Parse an MLB play-by-play XML file and build a scorecard
+# Parse an MLB play-by-play XML file and build a scorecard.
 
 import const
 from models import InningState, Base
@@ -296,7 +296,7 @@ class procMLB(saxutils.handler.ContentHandler):
                 result = const.OUT
             mtch = re.search("into.*? triple play, (\w*)", action)
             if mtch:
-                code = 'TP' #plays["line"] + positions[mtch.group(1)]
+                code = 'TP' #PLAYS["line"] + positions[mtch.group(1)]
                 result = const.OUT                
         elif word == "singles" or word == "doubles" or word == "triples":
             # Description is "on a (fly ball|ground ball|line drive|pop up)
@@ -352,7 +352,7 @@ class procMLB(saxutils.handler.ContentHandler):
                 code = PLAYS["sac bunt"]
                 result = const.OUT
             elif ''.join(words[i + 1:i + 5]) == "aninside-the-parkhomerun":
-                code = plays["home run"]
+                code = PLAYS["home run"]
                 result = const.HIT                
         elif word == "hit":
             if re.search("hit by pitch", action):
