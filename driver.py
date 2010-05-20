@@ -2,6 +2,8 @@
 
 import os
 import re
+
+from datetime import date, datetime, time, timedelta
 from urllib2 import urlopen
 from xml.sax import make_parser
 from xml.sax.handler import feature_namespaces
@@ -49,7 +51,95 @@ class Game :
         self.url = url
         self.home = home
         self.away = away
+
+    def jsonString(self) :
+        ret = "{"
+        ret += '"url": "' + self.url + '"'
+        ret += ', "home": "' + self.home + '"'
+        ret += ', "away": "' + self.away + '"'
+        ret += "}"
+        return ret
     
+def getGames(gameDate) :
+        url = 'http://gd2.mlb.com/components/game/mlb/year_' + \
+              gameDate.strftime("%Y") + '/month_' + gameDate.strftime("%m") + \
+              '/day_' + gameDate.strftime("%d") + '/'
+
+        f = urlopen(url)
+        data = f.read()
+        f.close()
+
+        games = []
+        for game in re.findall('href="(gid.*?)"', data) :
+            away = game.split("_")[4][:3]
+            if 'mlb' in away:
+                away = away[0:3]
+            home = game.split("_")[5][:3]
+            if 'mlb' in home:
+                home = home[0:3]
+            if away in TEAMS and home in TEAMS:
+                games.append(Game(game.rstrip('/'), TEAMS[away], TEAMS[home]))
+
+        return games
+
+class GameLister(webapp.RequestHandler) :
+    def get(self) :
+        # Translate the passed-in args to a datetime object
+        year = self.request.get("year")
+        month = self.request.get("month")
+        day = self.request.get("day")
+        gameDate = datetime.strptime(year + month + day, "%Y%m%d")
+
+        # Get the games for the requested day
+        games = getGames(gameDate)
+
+        # Translate the list of games to JSON
+        gamesJSON = '[\n'
+        for game in games :
+            gamesJSON += game.jsonString()
+            gamesJSON += ",\n"
+        gamesJSON = gamesJSON.strip(",\n")
+        gamesJSON += '\n]\n'
+
+        # Return the JSON
+        self.response.headers['Content-Type'] = 'text/javascript'
+        self.response.out.write(gamesJSON)
+        
+class PageBuilder(webapp.RequestHandler) :
+    def get(self) :
+        # Figure out at which day to set the calendar.  If no game has started today, use yesterday.
+        # Timezones are screwy in Python, so for now just get UTC and adjust manually
+        gameDate = datetime.utcnow()
+        gameDate -= timedelta(hours=4)
+        url = 'http://gd2.mlb.com/components/game/mlb/year_' + \
+              gameDate.strftime("%Y") + '/month_' + gameDate.strftime("%m") + \
+              '/day_' + gameDate.strftime("%d") + '/master_scoreboard.xml'
+
+        f = urlopen(url)
+        data = f.read()
+        f.close()
+
+        # We don't bother with parsing XML, we know exactly what we're looking for
+        times = re.finditer(' time="([0-9:]+)".*?ampm="([AP]M)"', data)
+        curTime = gameDate.time()
+        started = False
+        for mtch in times :
+            t = datetime.strptime(mtch.group(1) + mtch.group(2), "%I:%M%p").time()
+            if (t < curTime) :
+                started = True
+                break
+        if not started :
+            gameDate -= timedelta(days=1)
+
+        # Now that we've settled on a date, figure out what games are being played
+        games = getGames(gameDate)
+        template_values = {'games' : games,
+                           'year' : gameDate.strftime("%Y"),
+                           'month' : gameDate.strftime("%m"),
+                           'day' : gameDate.strftime("%d")}
+        path = os.path.join(os.path.dirname(__file__), 'templates/index.html')
+        self.response.out.write(template.render(path, template_values))
+
 class DateChooser(webapp.RequestHandler) :
     def get(self) :
         path = os.path.join(os.path.dirname(__file__), \
@@ -130,7 +220,9 @@ class BuildScorecard(webapp.RequestHandler) :
         box.endBox(p.homePitchers, p.awayPitchers)
 
         
-APPLICATION = webapp.WSGIApplication([('/', DateChooser),
+APPLICATION = webapp.WSGIApplication([('/', PageBuilder),
+                                      ('/getgames', GameLister),
+                                      ('/choosedate', DateChooser),
                                       ('/choosegame', GameChooser),
                                       ('/scorecard', BuildScorecard),
                                       ('/player', PlayerLookup)],
