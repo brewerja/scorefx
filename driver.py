@@ -1,20 +1,18 @@
 #!/usr/bin/python
 
 from buildBox import BoxScore
-from google.appengine.ext import db, webapp
+from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
 from google.appengine.ext.webapp.util import run_wsgi_app
-from models import Player
-from proc import procMLB
+from proc import procMLB, Player
 from urllib2 import urlopen
 from xml.sax import make_parser
 from xml.sax.handler import feature_namespaces
 
 import os
 import re
-import sys
 
-teams = {"ana" : "LAA",
+TEAMS = {"ana" : "LAA",
          "ari" : "ARI",
          "atl" : "ATL",
          "bal" : "BAL",
@@ -53,15 +51,17 @@ class Game :
     
 class DateChooser(webapp.RequestHandler) :
     def get(self) :
-        path = os.path.join(os.path.dirname(__file__), 'templates/datechooser.html')
+        path = os.path.join(os.path.dirname(__file__), \
+                            'templates/datechooser.html')
         self.response.out.write(template.render(path, None))
 
 class GameChooser(webapp.RequestHandler) :
     def get(self) :
-        y = self.request.get("year")
-        m = self.request.get("month")
-        d = self.request.get("day")
-        url = 'http://gd2.mlb.com/components/game/mlb/year_' + y + '/month_' + m + '/day_' + d + '/'
+        year = self.request.get("year")
+        month = self.request.get("month")
+        day = self.request.get("day")
+        url = 'http://gd2.mlb.com/components/game/mlb/year_' + \
+              year + '/month_' + month + '/day_' + day + '/'
 
         f = urlopen(url)
         data = f.read()
@@ -75,14 +75,15 @@ class GameChooser(webapp.RequestHandler) :
             home = game.split("_")[5][:3]
             if 'mlb' in home:
                 home = home[0:3]
-            if away in teams and home in teams:
-                games.append(Game(game.rstrip('/'), teams[away], teams[home]))
+            if away in TEAMS and home in TEAMS:
+                games.append(Game(game.rstrip('/'), TEAMS[away], TEAMS[home]))
 
         template_values = {'games' : games,
-                           'year' : y,
-                           'month' : m,
-                           'day' : d}
-        path = os.path.join(os.path.dirname(__file__), 'templates/gamechooser.html')
+                           'year' : year,
+                           'month' : month,
+                           'day' : day}
+        path = os.path.join(os.path.dirname(__file__), \
+                            'templates/gamechooser.html')
         self.response.out.write(template.render(path, template_values))
 
 class PlayerLookup(webapp.RequestHandler) :
@@ -90,15 +91,16 @@ class PlayerLookup(webapp.RequestHandler) :
         pid = self.request.get("batterID")
         players = Player.gql("WHERE pid = :1", pid)
         for p in players :
-            self.response.out.write(p.pid + " - " + p.first[0] + ". " + p.last)            
+            self.response.out.write(p.pid + " - " + p.first[0] + ". " + p.last)
         
 class BuildScorecard(webapp.RequestHandler) :
     def get(self) :
-        y = self.request.get("year")
-        m = self.request.get("month")
-        d = self.request.get("day")
+        year = self.request.get("year")
+        month = self.request.get("month")
+        day = self.request.get("day")
         gid = self.request.get("gameID")
-        url = 'http://gd2.mlb.com/components/game/mlb/year_' + y + '/month_' + m + '/day_' + d + '/' + gid
+        url = 'http://gd2.mlb.com/components/game/mlb/year_' + \
+               year + '/month_' + month + '/day_' + day + '/' + gid
 
         self.response.headers['Content-type'] = 'image/svg+xml'
         box = BoxScore(self.response.out)
@@ -127,14 +129,14 @@ class BuildScorecard(webapp.RequestHandler) :
         box.endBox(p.homePitchers, p.awayPitchers)
 
         
-application = webapp.WSGIApplication([('/', DateChooser),
+APPLICATION = webapp.WSGIApplication([('/', DateChooser),
                                       ('/choosegame', GameChooser),
                                       ('/scorecard', BuildScorecard),
                                       ('/player', PlayerLookup)],
                                      debug=True)
 
 def main() :
-    run_wsgi_app(application)
+    run_wsgi_app(APPLICATION)
     
 if __name__ == '__main__':
     main()

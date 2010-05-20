@@ -1,80 +1,50 @@
-from google.appengine.ext import db
-
-class Player(db.Model) :
-    pid = db.StringProperty()
-    first = db.StringProperty()
-    last = db.StringProperty()
-    
-class Batter():
-    def __init__(self, id, code, result, desc, willScore=False):
-        self.id = id # from MLB XML
-        self.name = id
-        self.code = code # F7, L8, G6, etc.
-        self.result = result # ERROR, HIT, OTHER, OUT (const.py)
-        self.desc = desc
-        self.events = [] # list of events, indexed by actionCount.  if no event @ an index, use None
-        self.willScore = willScore
- 
-    def advance(self, actionCount, code, toBase, out):
-        # update onBase and add an event to events at index actionCount
-        fromBase = self.onBase
-        self.onBase = toBase
-        while len(self.events) < actionCount:
-            self.events.append(None)
-        if (toBase == Base.HOME or toBase == Base.HOME_M) and out == False:
-            self.willScore = True
-        e = Event("RunnerAdvance", code, fromBase, toBase, out)            
-        self.events.append(e)
-    
-    def eventAt(self, actionCount):
-        if len(self.events) > actionCount:
-            ret = self.events[actionCount]
-            if ret:
-                ret.willScore = self.willScore
-        else:
-            ret = None
-        return ret
-class Event:
-    def __init__(self, type, code, fromBase, toBase, out):
-        self.type = type # this is either "AtBat" (really a plate appearance) or "RunnerAdvance"
-        self.code = code # this is, for example, "K" or "L7" or "WP"
-        self.fromBase = fromBase # the base where the player starts, we'll have a Base object defining "constant" values
-        self.toBase = toBase # the base where the player ends, we'll have a Base object defining "constant" values
-        self.out = out # whether the player reaches toBase successfully
-        self.willScore = False
-
 class InningState:
+    """The class handling all the stored data for each inning."""
     def __init__(self):
         self.actionCount = -1
-        self.batters = [] # Ordered list of the batters appearing in the inning.
-        self.onBase = {} # Dict of id:Batter pairs of who is on base at a given time.
-        self.runnerStack = {} # Dict of id:Batter pairs of runners to be advanced after the batter.
-        self.atbats = {} # Dict of actionCount:index in self.batters.
+        # Ordered list of the batters appearing in the inning.
+        self.batters = []
+        # Dict of pid:Batter pairs of who is on base at a given time.
+        self.onBase = {}
+        # Dict of pid:Batter pairs of runners to be advanced after the batter.
+        self.runnerStack = {}
+         # Dict of actionCount:index in self.batters.
+        self.atbats = {}
 
-    def createBatter(self, id, code, result, desc):
-        return Batter(id, code, result, desc)
+    def createBatter(self, pid, code, result, desc):
+        """Serves as the Batter __init__ function interface."""
+        return Batter(pid, code, result, desc)
 
     def addBatter(self, batterObj, toBase='', out=True, willScore=False):
+        """This adds the Batter object to the list of batters in the inning.
+           As a result, the actionCount is increased, and an AtBat Event 
+           object is created and added to the Batter's events list."""
         self.batters.append(batterObj)
         self.actionCount += 1
         while len(batterObj.events) < self.actionCount:
             batterObj.events.append(None)
         fromBase = ''
-        batterObj.events.append(Event("AtBat", batterObj.code, fromBase, toBase, out))
-        self.atbats[self.actionCount] = len(self.batters)-1
-        batterObj.willScore = willScore # whether a player will eventually score.  will need to refine this to handle batting around
-        batterObj.onBase = toBase # the base where the player is currently.  use the advance() function to change
+        e = Event("AtBat", batterObj.code, fromBase, toBase, out)
+        batterObj.events.append(e)
+        self.atbats[self.actionCount] = len(self.batters) - 1
+        # Whether a player will eventually score.
+        batterObj.willScore = willScore
+        # The base where the player is currently.
+        batterObj.onBase = toBase 
 
-        events = batterObj.events
         if out == False and toBase != Base.HOME:
-            self.onBase[batterObj.id] = batterObj
+            self.onBase[batterObj.pid] = batterObj
         return batterObj
     
-    def advRunners(self, duringAB=False, endAB=False): 
+    def advRunners(self, duringAB=False, endAB=False):
+        """Once all the runners have been parsed, they can then be advanced.
+           It depends whether the runners are advancing during an AB (SB, etc.)
+           or as a result of the AB, how they are processed. It also matters
+           if the runner's actions end the AB (CS to end inning, etc.).""" 
         if duringAB == False:
             # Hold runners who are already on base, but who did not move.
             for key, runnerObj in self.onBase.items():
-                if key not in self.runnerStack and self.batters[-1].id != key:
+                if key not in self.runnerStack and self.batters[-1].pid != key:
                     fromBase = runnerObj.onBase
                     if fromBase == Base.FIRST:
                         toBase = Base.FIRST
@@ -99,30 +69,90 @@ class InningState:
         for key, r in self.runnerStack.items():
             runnerObj = self.onBase[key]
             runnerObj.advance(self.actionCount, r.code, r.toBase, r.out)
-            # If a runners scores or is out on the play, take him off the bases.
-            if r.toBase == Base.HOME or r.toBase == Base.HOME_M or r.out == True:
+            # If a runner scores or is out on the play, take him off the bases.
+            if r.toBase == Base.HOME or r.toBase == Base.HOME_M or \
+               r.out == True:
                 self.onBase.pop(key)
         self.runnerStack = {}
             
     def addRunner(self, runnerObj, toBase, code='', out=False):
-        self.runnerStack[runnerObj.id] = Runner(toBase, code, out)
+        """Adds a Runner object for holding until advRunners is called."""
+        self.runnerStack[runnerObj.pid] = Runner(toBase, code, out)
     
     def pinchRunner(self, base, newID):
-        for key, runnerObj in self.onBase.items():
-            if self.onBase[key].onBase == base:
-                self.onBase[key].id = newID
-                self.onBase[newID] = self.onBase.pop(key)
+        """Replaces the runner on a given base with the id."""
+        for pid in self.onBase:
+            if self.onBase[pid].onBase == base:
+                self.onBase[pid].pid = newID
+                self.onBase[newID] = self.onBase.pop(pid)
+
 class Runner:
+    """Simple class to hold runner tag info until the runners are advanced."""
     def __init__(self, toBase, code, out):
         self.toBase = toBase
         self.code = code
         self.out = out
+        
+class Batter():
+    """This class is private, accessible only by the InningState class.
+       A Batter object is created for all batters in an inning and
+       maintains the event information for tracking a batter-runner
+       throughout the inning."""
+    def __init__(self, pid, code, result, desc, willScore=False):
+        self.pid = pid # from MLB XML
+        self.name = pid
+        self.code = code # F7, L8, G6, etc.
+        self.result = result # ERROR, HIT, OTHER, OUT (const.py)
+        self.desc = desc # Description text used for the tooltips.
+        # List of events, indexed by actionCount.
+        # If no event at an index, use None.
+        self.events = []
+        self.willScore = willScore
+        self.onBase = ''
+ 
+    def advance(self, actionCount, code, toBase, out):
+        """Updates the Batter object of one who has reached base.
+           An Event is added to the events list at the actionCount index."""
+        fromBase = self.onBase
+        self.onBase = toBase
+        while len(self.events) < actionCount:
+            self.events.append(None)
+        if (toBase == Base.HOME or toBase == Base.HOME_M) and out == False:
+            self.willScore = True
+        e = Event("RunnerAdvance", code, fromBase, toBase, out)            
+        self.events.append(e)
+    
+    def eventAt(self, actionCount):
+        """Returns the Event (if one exists) at the requested actionCount
+           index. It will also mark an event's willScore variable True if the
+           Batter's willScore is True."""
+        if len(self.events) > actionCount:
+            ret = self.events[actionCount]
+            if ret:
+                ret.willScore = self.willScore
+        else:
+            ret = None
+        return ret
+
+class Event:
+    """All outs and on base advancement by a runner are captured for each
+       individual Batter. Each Event records the necessary information
+       (bases, if an out is made, etc.) for recreating a runner's progress."""
+    def __init__(self, type, code, fromBase, toBase, out):
+        # Either "AtBat" (really a plate appearance) or "RunnerAdvance".
+        self.type = type
+        self.code = code # this is, for example, "K" or "L7" or "WP"
+        self.fromBase = fromBase # The base where the player starts.
+        self.toBase = toBase # The base where the player ends.
+        self.out = out # whether the player reaches toBase successfully
+        self.willScore = False        
 
 class Base:
+    """Set of constants representing the possible bases."""
     FIRST = "1B"
     SECOND = "2B"
     THIRD = "3B"
     HOME = "4B"
-    SECOND_M = "2X" # 2nd base in the "middle" of a plate appearance i.e. from a stolen base
+    SECOND_M = "2X" # 2nd base in the "middle" of a plate appearance.
     THIRD_M = "3X" # ditto
     HOME_M = "4X"        

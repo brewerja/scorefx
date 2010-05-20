@@ -10,30 +10,31 @@ import re
 import sys
 
 if __name__ == '__main__' :
-    m = sys.argv[1]
-    d = sys.argv[2]
-    y = sys.argv[3]
-    team = sys.argv[4].lower()
+    MONTH = sys.argv[1]
+    DAY = sys.argv[2]
+    YEAR = sys.argv[3]
+    TEAM = sys.argv[4].lower()
 
-    url = 'http://gd2.mlb.com/components/game/mlb/year_' + y + '/month_' + m + '/day_' + d + '/'
+    url = 'http://gd2.mlb.com/components/game/mlb/year_' + \
+           YEAR + '/month_' + MONTH + '/day_' + DAY + '/'
 
     f = urlopen(url)
-    data = f.read()
+    DATA = f.read()
     f.close()
 
-    for game in re.findall('href="(gid.*?)"', data) :
-        if game.find(team + "mlb") > 0 :
+    for game in re.findall('href="(gid.*?)"', DATA) :
+        if game.find(TEAM + "mlb") > 0 :
+            url += game
             break
-    url += game
-
-    img = open("test.svg", "w")
-    box = BoxScore(img)
     
-    parser = make_parser()
-    parser.setFeature(feature_namespaces, 0)
-    p = procMLB(box, url)
+    IMG = open("test.svg", "w")
+    BOX = BoxScore(IMG)
+    
+    PARSER = make_parser()
+    PARSER.setFeature(feature_namespaces, 0)
+    p = procMLB(BOX, url)
     p.offline = True
-    parser.setContentHandler(p)
+    PARSER.setContentHandler(p)
 
     f = urlopen(url + '/inning')
     s = f.read()
@@ -41,14 +42,14 @@ if __name__ == '__main__' :
     for i in range(1, len(re.findall('"inning_\d+\.xml"', s)) + 1) :
         print 'Inning: ' + str(i)
         f = urlopen(url + '/inning/inning_' + str(i) + '.xml')
-        parser.parse(f)
+        PARSER.parse(f)
         f.close()
         if i == len(re.findall('"inning_\d+\.xml"', s)):
-            box.endInning(gameOver=True)
+            BOX.endInning(gameOver=True)
         else:
-            box.endInning()                
-    box.endBox(p.homePitchers, p.awayPitchers)
+            BOX.endInning()                
+    BOX.endBox(p.homePitchers, p.awayPitchers)
     print p.homePitchers
     print p.awayPitchers
 
-    img.close()
+    IMG.close()

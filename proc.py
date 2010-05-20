@@ -3,13 +3,13 @@
 # Parse an MLB play-by-play XML file and build a scorecard
 
 import const
-from models import Player, InningState, Base
+from models import InningState, Base
 import re
 from urllib2 import urlopen
 from xml.sax import saxutils
+from google.appengine.ext import db
 
-bases = {"1B": 1, "2B": 2, "3B": 3, "": 4}
-wrds = ["ground",
+WORDS = ["ground",
         "grounds",
         "walks",
         "flies",
@@ -26,7 +26,7 @@ wrds = ["ground",
         "pops",
         "reaches",
         "out"]
-plays = { "strikeout": "K",
+PLAYS = { "strikeout": "K",
           "strikeout_looking": "Kl",
           "walk": "BB",
           "ground": "G",
@@ -39,7 +39,7 @@ plays = { "strikeout": "K",
           "fielder's choice": "FC",
           "hit by pitch": "HB",
           "catcher interference": "CI"}
-positions = {"pitcher": "1",
+POSITIONS = {"pitcher": "1",
              "catcher": "2",
              "first": "3",
              "second": "4",
@@ -65,6 +65,8 @@ class procMLB(saxutils.handler.ContentHandler):
         self.pitchers = dict()
         self.offline = False
         self.pitcher = ''
+        self.outs = '0'
+        self.batterObj = None
         
     def startElement(self, name, attrs):
         if (name == 'top'):
@@ -88,7 +90,7 @@ class procMLB(saxutils.handler.ContentHandler):
                     self.pinchRunnerID = attrs.get('player')
                 
         elif (name == 'atbat'):
-            # Get the starting pitcher or a pitcher relieving one who hasn't put anyone out.
+            # Get the SP or a RP who hasn't put anyone out.
             if self.reliefNoOutsFlag == True or \
                (not self.homePitchers and self.curTeam == "A") or \
                (not self.awayPitchers and self.curTeam == "H"):
@@ -128,10 +130,11 @@ class procMLB(saxutils.handler.ContentHandler):
             if attrs.get('score') == "T":
                 willScore = True
                 toBase = Base.HOME
-            elif toBase == '' and self.outs == 3: #stranded at the end of an inning, or out!?
+            # stranded at the end of an inning, or out!?
+            elif toBase == '' and self.outs == 3:
                 toBase = fromBase
             elif toBase == '':
-                toBase = str(bases[fromBase]+1)+'B'
+                toBase = str(int(fromBase[0])+1)+'B'
                 out = True
             
             mtch = re.search('Caught Stealing', event)
@@ -140,7 +143,7 @@ class procMLB(saxutils.handler.ContentHandler):
                 if attrs.get('end') == '':
                     out = True
                     if self.outs == 3:
-                        toBase = str(bases[fromBase]+1)+'B'
+                        toBase = str(int(fromBase[0])+1)+'B'
             mtch = re.search('Defensive Indiff', event)
             if mtch:
                 code = 'DI'
@@ -156,7 +159,7 @@ class procMLB(saxutils.handler.ContentHandler):
                 if attrs.get('end') == '':
                     out = True
                     if self.outs == 3:
-                        toBase = str(bases[fromBase]+1)+'B'
+                        toBase = str(int(fromBase[0])+1)+'B'
             #mtch = re.search('Pickoff', event)
             #if mtch:
             #    code = 'PO'
@@ -182,19 +185,20 @@ class procMLB(saxutils.handler.ContentHandler):
             if pid == self.pinchRunnerID:
                 self.inningState.pinchRunner(fromBase, self.pinchRunnerID)
             
-            # If this runner is also the batter, then go ahead and add the batter here.
-            if pid == self.batterObj.id:
+            # If this runner is also the batter, then add the batter here.
+            if pid == self.batterObj.pid:
                 self.noBatterRunner = False
                 self.inningState.addBatter(self.batterObj, toBase, out, willScore)
                 self.inningState.advRunners()                
-            else: # otherwise, it's a runner already on base, so advance him accordingly.
+            else: # otherwise, it's a runner already on base, so advance him.
                 runnerObj = self.inningState.onBase[pid]
                 self.inningState.addRunner(runnerObj, toBase, code, out)
                 
     def endElement(self, name):
         if name == 'atbat':
             self.desc = ''
-            # If there is not a runner tag for the batter, then you don't need the extra stuff.
+            # If there is not a runner tag for the batter, 
+            # then you don't need the extra stuff.
             if self.noBatterRunner == True:
                 self.inningState.addBatter(self.batterObj)
                 if self.batterObj.code == '--':
@@ -210,7 +214,6 @@ class procMLB(saxutils.handler.ContentHandler):
           
    
     def parsePlay(self, des):
-        name = ""
         code = "XXX"
         result = const.OTHER
         found = False
@@ -222,11 +225,10 @@ class procMLB(saxutils.handler.ContentHandler):
         for word in words:
             word = word.split('.')[0]
             # Until we find the type of play, we have the batter's name
-            if word in wrds:
+            if word in WORDS:
                 found = True
                 break
             else:
-                name += word
                 i += 1
                 
         if not found:
@@ -235,30 +237,30 @@ class procMLB(saxutils.handler.ContentHandler):
         if word == "strikes":
             # "strikes out swinging"
             # "strikes out on foul tip"
-            code = plays["strikeout"]
+            code = PLAYS["strikeout"]
             result = const.OUT
         elif word == "called":
             # "called out on strikes"
-            code = plays["strikeout_looking"]
+            code = PLAYS["strikeout_looking"]
             result = const.OUT
         elif word == "walks":
-            code = plays["walk"]
+            code = PLAYS["walk"]
             result = const.HIT
         elif word == "ground":
             mtch = re.search("ground bunts into a force out.*?, (\w*)", action)
             if mtch:
-                code = plays["ground"] + positions[mtch.group(1)]
+                code = PLAYS["ground"] + POSITIONS[mtch.group(1)]
                 result = const.OUT
         elif word == "grounds":
             mtch = re.search("grounds out.*?, (\w*)", action)
             if mtch:
-                code = plays["ground"] + positions[mtch.group(1)]
+                code = PLAYS["ground"] + POSITIONS[mtch.group(1)]
                 result = const.OUT
             elif (words[i + 1] == "out" and words[i + 2] == "to"):
-                code = plays["ground"] + positions[words[i + 3]]
+                code = PLAYS["ground"] + POSITIONS[words[i + 3]]
                 result = const.OUT
             elif (words[i + 1] == "out" and words[i + 3] == "to"):
-                code = plays["ground"] + positions[words[i + 4]]
+                code = PLAYS["ground"] + POSITIONS[words[i + 4]]
                 result = const.OUT
             elif ''.join(words[i + 1:i + 4]) == "intodoubleplay,":
                 code = "DP"
@@ -266,66 +268,66 @@ class procMLB(saxutils.handler.ContentHandler):
             elif ''.join(words[i + 1:i + 5]) == "intoaforceout,":
                 # description is "grounds into a force out, (pos) to (pos)"
                 # or "grounds into a force out, fielded by (pos)."
-                code = plays["ground"]
+                code = PLAYS["ground"]
                 tmp = action.split(",")[1]
                 mtch = re.search("fielded by (\w*)", tmp)
                 if mtch:
-                    code += positions[mtch.group(1)]
+                    code += POSITIONS[mtch.group(1)]
                 else:
-                    code += positions[tmp.split()[0]]
+                    code += POSITIONS[tmp.split()[0]]
                 result = const.OUT
         elif word == "flies" or word == "pops":
             mtch = re.search("out.*? to (\w*)", action)
             if mtch:
-                code = plays["fly"] + positions[mtch.group(1)]
+                code = PLAYS["fly"] + POSITIONS[mtch.group(1)]
                 result = const.OUT
             mtch = re.search("into.*? double play, (\w*)", action)
             if mtch:
-                code = plays["fly"] + positions[mtch.group(1)]
+                code = PLAYS["fly"] + POSITIONS[mtch.group(1)]
                 result = const.OUT
         elif word == "lines":
             mtch = re.search("out.*? to (\w*)", action)
             if mtch:
-                code = plays["line"] + positions[mtch.group(1)]
+                code = PLAYS["line"] + POSITIONS[mtch.group(1)]
                 result = const.OUT
             mtch = re.search("into.*? double play, (\w*)", action)
             if mtch:
-                code = plays["line"] + positions[mtch.group(1)]
+                code = PLAYS["line"] + POSITIONS[mtch.group(1)]
                 result = const.OUT
         elif word == "singles" or word == "doubles" or word == "triples":
-            # description is "on a (fly ball|ground ball|line drive|pop up) to (position)"
-            # there is sometimes an adjective (soft, hard) after "on a"
+            # Description is "on a (fly ball|ground ball|line drive|pop up)
+            # to (position)" there is sometimes an adjective (soft, hard) after "on a"
             mtch = re.search("on a.*? (fly|ground|line|pop) .*? to (\w*)", action)
             tmp = mtch.group(1)
             if tmp == "pop":
                 tmp = "fly"
-            code = plays[tmp] + positions[mtch.group(2)]
+            code = PLAYS[tmp] + POSITIONS[mtch.group(2)]
             result = const.HIT
         elif word == "reaches":
             if re.search("reaches on .* error", action):
                 mtch = re.search("error by (\w*)", action)
-                code = plays["error"] + positions[mtch.group(1)]
+                code = PLAYS["error"] + POSITIONS[mtch.group(1)]
                 result = const.ERROR                
             if re.search("reaches on a fielder's choice", action):
                 mtch = re.search("fielded by (\w*)", action)
                 if mtch == None:
                     mtch = re.search("reaches on a fielder's choice out, (\w*)", action)
-                code = plays["fielder's choice"] + positions[mtch.group(1)]
+                code = PLAYS["fielder's choice"] + POSITIONS[mtch.group(1)]
                 result = const.OTHER
             if re.search("reaches on catcher interference", action):
-                code = plays["catcher interference"]
+                code = PLAYS["catcher interference"]
                 result = const.OTHER                
         elif word == "homers":
-            code = plays["home run"]
+            code = PLAYS["home run"]
             result = const.HIT
         elif word == "out":
             mtch = re.search("on a sacrifice (\w*)(,| to) (\w*)", action)
             if mtch:
                 if mtch.group(1) == "fly":
-                    code = plays["sac fly"] + positions[mtch.group(3)]
+                    code = PLAYS["sac fly"] + POSITIONS[mtch.group(3)]
                     result = const.OUT
                 elif mtch.group(1) == "bunt":
-                    code = plays["sac bunt"] + positions[mtch.group(3)]
+                    code = PLAYS["sac bunt"] + POSITIONS[mtch.group(3)]
                     result = const.OUT
         elif word == "hits":
             mtch = re.search("ground-rule double", action)
@@ -333,21 +335,21 @@ class procMLB(saxutils.handler.ContentHandler):
                 action = action.split('.')[0]
                 mtch = re.search("ground-rule double .* on a (\w*) .*? to (\w*)", action)
                 if mtch:
-                    code = plays[mtch.group(1)] + positions[mtch.group(2)]
+                    code = PLAYS[mtch.group(1)] + POSITIONS[mtch.group(2)]
                     result = const.HIT
                 mtch = re.search("ground-rule double .* on a (\w*) .*? down the (\w*)", action)
                 if mtch:
-                    code = plays[mtch.group(1)] + positions[mtch.group(2)]
+                    code = PLAYS[mtch.group(1)] + POSITIONS[mtch.group(2)]
                     result = const.HIT                
             elif ''.join(words[i + 1:i + 4]) == "agrandslam":
-                code = plays["home run"]
+                code = PLAYS["home run"]
                 result = const.HIT
             elif ''.join(words[i + 1:i + 4]) == "asacrificebunt":
-                code = plays["sac bunt"]
+                code = PLAYS["sac bunt"]
                 result = const.OUT
         elif word == "hit":
             if re.search("hit by pitch", action):
-                code = plays["hit by pitch"]
+                code = PLAYS["hit by pitch"]
                 result = const.HIT
         return (code, result)
 
@@ -381,13 +383,12 @@ class procMLB(saxutils.handler.ContentHandler):
             if not self.homePitchers or self.pitcher != self.homePitchers[-1][0]:
                 self.homePitchers.append([self.pitcher, self.box.getCurBatter("A", batters)])
         elif self.curTeam == "H":
-            if not self.awayPitchers or self.pitcher != self.awayPitchers[-1][0]:
+            if (not self.awayPitchers or self.pitcher != self.awayPitchers[-1][0]):
                 self.awayPitchers.append([self.pitcher, self.box.getCurBatter("H", batters)])            
             
     def updateBatter(self, batterID):
-            if self.offline:
-                pass
-            elif batterID in self.batters:
+        if not self.offline:
+            if batterID in self.batters:
                 btr = self.batters[batterID]
             else:
                 # We haven't seen the batter in this game yet, query the db
@@ -405,7 +406,12 @@ class procMLB(saxutils.handler.ContentHandler):
                 else:
                     btr = btrs.fetch(1)[0]
                 # Cache the batter to save future trips to the db
-                self.batters[batterID] = btr 
-                
-            if not self.offline:
-                self.batterObj.name = btr.first[0] + ". " + btr.last                       
+                self.batters[batterID] = btr
+            
+            self.batterObj.name = btr.first[0] + ". " + btr.last
+
+class Player(db.Model):
+    """App engine db objects."""
+    pid = db.StringProperty()
+    first = db.StringProperty()
+    last = db.StringProperty()
