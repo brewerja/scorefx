@@ -1,13 +1,15 @@
 #!/usr/bin/python
 
-# Parse an MLB play-by-play XML file and build a scorecard.
+"""Parse an MLB play-by-play XML file and build a scorecard."""
 
-import const
-from models import InningState, Base
 import re
 from urllib2 import urlopen
 from xml.sax import saxutils
+
 from google.appengine.ext import db
+
+import const
+from models import InningState
 
 WORDS = ["ground",
         "grounds",
@@ -111,7 +113,7 @@ class procMLB(saxutils.handler.ContentHandler):
             self.updateBatter(batterID)
         
         elif (name == 'pitch' and self.inningState.runnerStack):
-              self.inningState.advRunners(duringAB = True)
+            self.inningState.advRunners(duringAB = True)
             
         elif (name == 'runner'):
             # Handle a runner advancing
@@ -129,7 +131,7 @@ class procMLB(saxutils.handler.ContentHandler):
             willScore = False
             if attrs.get('score') == "T":
                 willScore = True
-                toBase = Base.HOME
+                toBase = "4B"
             # stranded at the end of an inning, or out!?
             elif toBase == '' and self.outs == 3:
                 toBase = fromBase
@@ -214,7 +216,7 @@ class procMLB(saxutils.handler.ContentHandler):
           
    
     def parsePlay(self, des):
-        code = "XXX"
+        code = "XX"
         result = const.OTHER
         found = False
         i = 0
@@ -222,6 +224,7 @@ class procMLB(saxutils.handler.ContentHandler):
         lines = des.split(".    ")
         action = re.sub("\.\s*$", "", lines[0])
         words = action.split()
+        word = ""
         for word in words:
             word = word.split('.')[0]
             # Until we find the type of play, we have the batter's name
@@ -336,7 +339,7 @@ class procMLB(saxutils.handler.ContentHandler):
         elif word == "hits":
             mtch = re.search("ground-rule double", action)
             if mtch:
-                action = action.split('.')[0]
+                action = action[6:len(action)].split('.')[0] # [6:end] Handles B. J. Upton
                 mtch = re.search("ground-rule double .* on a (\w*) .*? to (\w*)", action)
                 if mtch:
                     code = PLAYS[mtch.group(1)] + POSITIONS[mtch.group(2)]

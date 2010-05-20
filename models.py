@@ -1,3 +1,5 @@
+"""Container for the InningState class and the classes it uses."""
+
 class InningState:
     """The class handling all the stored data for each inning."""
     def __init__(self):
@@ -11,9 +13,10 @@ class InningState:
          # Dict of actionCount:index in self.batters.
         self.atbats = {}
 
-    def createBatter(self, pid, code, result, desc):
+    @staticmethod
+    def createBatter(pid, code, result, desc):
         """Serves as the Batter __init__ function interface."""
-        return Batter(pid, code, result, desc)
+        return _Batter(pid, code, result, desc)
 
     def addBatter(self, batterObj, toBase='', out=True, willScore=False):
         """This adds the Batter object to the list of batters in the inning.
@@ -24,7 +27,7 @@ class InningState:
         while len(batterObj.events) < self.actionCount:
             batterObj.events.append(None)
         fromBase = ''
-        e = Event("AtBat", batterObj.code, fromBase, toBase, out)
+        e = _Event("AtBat", batterObj.code, fromBase, toBase, out)
         batterObj.events.append(e)
         self.atbats[self.actionCount] = len(self.batters) - 1
         # Whether a player will eventually score.
@@ -32,7 +35,7 @@ class InningState:
         # The base where the player is currently.
         batterObj.onBase = toBase 
 
-        if out == False and toBase != Base.HOME:
+        if out == False and toBase != HOME:
             self.onBase[batterObj.pid] = batterObj
         return batterObj
     
@@ -46,12 +49,12 @@ class InningState:
             for key, runnerObj in self.onBase.items():
                 if key not in self.runnerStack and self.batters[-1].pid != key:
                     fromBase = runnerObj.onBase
-                    if fromBase == Base.FIRST:
-                        toBase = Base.FIRST
-                    elif fromBase == Base.SECOND or fromBase == Base.SECOND_M:
-                        toBase = Base.SECOND
-                    elif fromBase == Base.THIRD or fromBase == Base.THIRD_M:
-                        toBase = Base.THIRD
+                    if fromBase == FIRST:
+                        toBase = FIRST
+                    elif fromBase == SECOND or fromBase == SECOND_M:
+                        toBase = SECOND
+                    elif fromBase == THIRD or fromBase == THIRD_M:
+                        toBase = THIRD
                     self.addRunner(runnerObj, toBase)        
         
         if duringAB == True:
@@ -59,25 +62,25 @@ class InningState:
                 self.actionCount += 1
             for key, r in self.runnerStack.items():
                 toBase = r.toBase
-                if toBase == Base.SECOND:
-                    r.toBase = Base.SECOND_M
-                elif toBase == Base.THIRD:
-                    r.toBase = Base.THIRD_M
-                elif toBase == Base.HOME:
-                    r.toBase = Base.HOME_M
+                if toBase == SECOND:
+                    r.toBase = SECOND_M
+                elif toBase == THIRD:
+                    r.toBase = THIRD_M
+                elif toBase == HOME:
+                    r.toBase = HOME_M
         
         for key, r in self.runnerStack.items():
             runnerObj = self.onBase[key]
             runnerObj.advance(self.actionCount, r.code, r.toBase, r.out)
             # If a runner scores or is out on the play, take him off the bases.
-            if r.toBase == Base.HOME or r.toBase == Base.HOME_M or \
+            if r.toBase == HOME or r.toBase == HOME_M or \
                r.out == True:
                 self.onBase.pop(key)
         self.runnerStack = {}
             
     def addRunner(self, runnerObj, toBase, code='', out=False):
         """Adds a Runner object for holding until advRunners is called."""
-        self.runnerStack[runnerObj.pid] = Runner(toBase, code, out)
+        self.runnerStack[runnerObj.pid] = _Runner(toBase, code, out)
     
     def pinchRunner(self, base, newID):
         """Replaces the runner on a given base with the id."""
@@ -86,14 +89,14 @@ class InningState:
                 self.onBase[pid].pid = newID
                 self.onBase[newID] = self.onBase.pop(pid)
 
-class Runner:
+class _Runner:
     """Simple class to hold runner tag info until the runners are advanced."""
     def __init__(self, toBase, code, out):
         self.toBase = toBase
         self.code = code
         self.out = out
         
-class Batter():
+class _Batter():
     """This class is private, accessible only by the InningState class.
        A Batter object is created for all batters in an inning and
        maintains the event information for tracking a batter-runner
@@ -117,9 +120,9 @@ class Batter():
         self.onBase = toBase
         while len(self.events) < actionCount:
             self.events.append(None)
-        if (toBase == Base.HOME or toBase == Base.HOME_M) and out == False:
+        if (toBase == HOME or toBase == HOME_M) and out == False:
             self.willScore = True
-        e = Event("RunnerAdvance", code, fromBase, toBase, out)            
+        e = _Event("RunnerAdvance", code, fromBase, toBase, out)            
         self.events.append(e)
     
     def eventAt(self, actionCount):
@@ -134,25 +137,23 @@ class Batter():
             ret = None
         return ret
 
-class Event:
+class _Event:
     """All outs and on base advancement by a runner are captured for each
        individual Batter. Each Event records the necessary information
        (bases, if an out is made, etc.) for recreating a runner's progress."""
-    def __init__(self, type, code, fromBase, toBase, out):
+    def __init__(self, type_, code, fromBase, toBase, out):
         # Either "AtBat" (really a plate appearance) or "RunnerAdvance".
-        self.type = type
+        self.type_ = type_
         self.code = code # this is, for example, "K" or "L7" or "WP"
         self.fromBase = fromBase # The base where the player starts.
         self.toBase = toBase # The base where the player ends.
         self.out = out # whether the player reaches toBase successfully
         self.willScore = False        
 
-class Base:
-    """Set of constants representing the possible bases."""
-    FIRST = "1B"
-    SECOND = "2B"
-    THIRD = "3B"
-    HOME = "4B"
-    SECOND_M = "2X" # 2nd base in the "middle" of a plate appearance.
-    THIRD_M = "3X" # ditto
-    HOME_M = "4X"        
+FIRST = "1B"
+SECOND = "2B"
+THIRD = "3B"
+HOME = "4B"
+SECOND_M = "2X" # 2nd base in the "middle" of a plate appearance.
+THIRD_M = "3X" # ditto
+HOME_M = "4X"        

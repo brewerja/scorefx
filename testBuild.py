@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 
-from buildBox import BoxScore
-from proc import procMLB
+import re
+import sys
 from urllib2 import urlopen
 from xml.sax import make_parser
 from xml.sax.handler import feature_namespaces
 
-import re
-import sys
+from buildBox import BoxScore
+from proc import procMLB
 
-if __name__ == '__main__' :
+if __name__ == '__main__':
     MONTH = sys.argv[1]
     DAY = sys.argv[2]
     YEAR = sys.argv[3]

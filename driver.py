@@ -1,16 +1,17 @@
 #!/usr/bin/python
 
-from buildBox import BoxScore
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp import template
-from google.appengine.ext.webapp.util import run_wsgi_app
-from proc import procMLB, Player
+import os
+import re
 from urllib2 import urlopen
 from xml.sax import make_parser
 from xml.sax.handler import feature_namespaces
 
-import os
-import re
+from google.appengine.ext import webapp
+from google.appengine.ext.webapp import template
+from google.appengine.ext.webapp.util import run_wsgi_app
+
+from buildBox import BoxScore
+from proc import procMLB, Player
 
 TEAMS = {"ana" : "LAA",
          "ari" : "ARI",
