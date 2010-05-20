@@ -76,13 +76,14 @@ class BoxScore :
                                     self.curHomeBatter += self.batterHeight
                 f.write('</g>\n')
             else:
-                runnersAlready = True
                 for j in range(i+1, inningState.actionCount+1):
                     if j in inningState.atbats:
                         batter_num = inningState.atbats[j]
                         b = inningState.batters[batter_num]
                         break
-                f.write('<g xlink:title="' + b.desc + '">\n')
+                if not runnersAlready:
+                    f.write('<g xlink:title="' + b.desc + '">\n')
+                runnersAlready = True                    
                 for b in inningState.batters:
                     e = b.eventAt(i)
                     if e != None:                                               

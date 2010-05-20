@@ -294,6 +294,10 @@ class procMLB(saxutils.handler.ContentHandler):
             if mtch:
                 code = PLAYS["line"] + POSITIONS[mtch.group(1)]
                 result = const.OUT
+            mtch = re.search("into.*? triple play, (\w*)", action)
+            if mtch:
+                code = 'TP' #plays["line"] + positions[mtch.group(1)]
+                result = const.OUT                
         elif word == "singles" or word == "doubles" or word == "triples":
             # Description is "on a (fly ball|ground ball|line drive|pop up)
             # to (position)" there is sometimes an adjective (soft, hard) after "on a"
@@ -347,6 +351,9 @@ class procMLB(saxutils.handler.ContentHandler):
             elif ''.join(words[i + 1:i + 4]) == "asacrificebunt":
                 code = PLAYS["sac bunt"]
                 result = const.OUT
+            elif ''.join(words[i + 1:i + 5]) == "aninside-the-parkhomerun":
+                code = plays["home run"]
+                result = const.HIT                
         elif word == "hit":
             if re.search("hit by pitch", action):
                 code = PLAYS["hit by pitch"]
