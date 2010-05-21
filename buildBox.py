@@ -350,12 +350,12 @@ circleStyle = []
 function highlight(src) {
     lineArray = src.getElementsByTagName('line')
     for (i=0; i<lineArray.length; i++){
-    lineStyle[i] = lineArray[i].getAttribute("style")
+        lineStyle[i] = lineArray[i].getAttribute("style")
         lineArray[i].setAttribute("style", "stroke:orange; stroke-width:3;")
     }
     circleArray = src.getElementsByTagName('circle')
     for (i=0; i<circleArray.length; i++){
-    circleStyle[i] = circleArray[i].getAttribute("style")
+        circleStyle[i] = circleArray[i].getAttribute("style")
         circleArray[i].setAttribute("style", "stroke:orange; fill:orange;")
     }
 }
@@ -366,9 +366,15 @@ function unhighlight(src) {
         lineArray[i].setAttribute("style", lineStyle[i])
     circleArray = src.getElementsByTagName('circle')
     for (i=0; i<circleArray.length; i++)
-        circleArray[i].setAttribute("style", circleStyle[i])\n''')
+        circleArray[i].setAttribute("style", circleStyle[i])
+}
 
-        img.write('}\n]]></script>\n\n')
+function moveToBottom(src)
+{
+   src.parentNode.insertBefore(src, src.parentNode.firstChild)
+}\n''')
+
+        img.write('\n]]></script>\n\n')
         
         #SWITCH!
         saveTmp = self.imgFileTmp
@@ -553,21 +559,23 @@ function unhighlight(src) {
             self.writeText("E", xmid, ymid + 4, anchor="middle", size=8)
         
     def endInning(self, gameOver=False):
+        f = self.imgFileTmp
         self.homeHash = self.curHomeBatter + 2
         if self.curHomeBatter > self.curAwayBatter :
             self.curAwayBatter = self.curHomeBatter
         else :
             self.curHomeBatter = self.curAwayBatter
         y = self.curHomeBatter + 2
-
+        
+        f.write('<g onload="moveToBottom(this)">\n')
         if not gameOver:
             self.writeLine(self.awayX + self.nameWidth, y, self.awayX + self.boxWidth, y, 'gray', '.4')
             self.writeLine(self.homeX - self.nameWidth, y, self.homeX - self.boxWidth, y, 'gray', '.4')
 
         self.writeText(str(self.inning), (self.awayX + self.homeX)/2, (y + self.lastInningY)/2+2.5, anchor="middle", color="blue", weight="bold")
+        f.write('</g>\n')
         self.inning = self.inning + 1
         self.lastInningY = y
-        f = self.imgFileTmp
         f.write('\n')
         
     def getCurBatter(self, team, batters=0):
