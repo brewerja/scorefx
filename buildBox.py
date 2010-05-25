@@ -547,13 +547,19 @@ function moveToBottom(src)
         else :
             slope = m*float(y2 - y1)/float(x2 - x1)
             if not error :
-                self.writeLine(x1, y1, x2 - m*4/slope, y2 - 4, color, sw)
+                if slope != 0:
+                    self.writeLine(x1, y1, x2 - m*4/slope, y2 - 4, color, sw)
+                else:
+                    self.writeLine(x1, y1, x2 - m*4, y2, color, sw)
             else :
                 xmid = (x1 + x2) / 2
                 ymid = (y1 + y2) / 2
                 self.writeLine(x1, y1, xmid - m * 3, ymid + 3, color, sw)
-                self.writeLine(xmid + m * 3, ymid - 3, x2, y2, color, sw)             
-            self.writeX(x2 - m*4/slope, y2 - 4)
+                self.writeLine(xmid + m * 3, ymid - 3, x2, y2, color, sw)
+            if slope != 0:             
+                self.writeX(x2 - m*4/slope, y2 - 4)
+            else:
+                self.writeX(x2 - m*4, y2)
 
         if error :
             self.writeText("E", xmid, ymid + 4, anchor="middle", size=8)
