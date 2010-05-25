@@ -118,9 +118,9 @@ class PageBuilder(webapp.RequestHandler) :
         f = urlopen(url)
         data = f.read()
         f.close()
-
+        
         # We don't bother with parsing XML, we know exactly what we're looking for
-        times = re.finditer(' time="([0-9:]+)".*?ampm="([AP]M)"', data)
+        times = re.finditer(' time="([0-9:]+)".*?ampm="([AP]M)"', data, re.DOTALL)
         curTime = gameDate.time()
         started = False
         for mtch in times :
