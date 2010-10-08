@@ -61,16 +61,21 @@ class Game :
         return ret
     
 def getGames(gameDate) :
+        year = gameDate.strftime("%Y")
+        month = gameDate.strftime("%m")
+        date = gameDate.strftime("%d")
+
         url = 'http://gd2.mlb.com/components/game/mlb/year_' + \
-              gameDate.strftime("%Y") + '/month_' + gameDate.strftime("%m") + \
-              '/day_' + gameDate.strftime("%d") + '/'
+               year+ '/month_' + month + \
+              '/day_' + date + '/'
 
         f = urlopen(url)
         data = f.read()
         f.close()
 
         games = []
-        for game in re.findall('href="(gid.*?)"', data) :
+        for game in re.findall('href="(gid_' + year + '_' + month + '_' + date + 
+                '.*?)"', data) :
             away = game.split("_")[4][:3]
             if 'mlb' in away:
                 away = away[0:3]
