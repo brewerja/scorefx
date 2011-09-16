@@ -3,7 +3,8 @@
 """Parse an MLB play-by-play XML file and build a scorecard."""
 
 import re
-from urllib2 import urlopen
+import logging
+from urllib2 import urlopen, HTTPError
 from xml.sax import saxutils
 
 from google.appengine.ext import db
@@ -364,6 +365,8 @@ class procMLB(saxutils.handler.ContentHandler):
         return (code, result)
 
     def updatePitcher(self, pitcherID):
+        if pitcherID == '0':
+            logging.error("Pitcher ID was '0'. Handled with a bogus name for now.")
         if self.offline:
             self.pitcher = pitcherID
         elif pitcherID in self.pitchers:
@@ -372,15 +375,24 @@ class procMLB(saxutils.handler.ContentHandler):
             # We haven't seen the pitcher in this game yet, query the db
             pchrs = Player.gql("WHERE pid=:1", pitcherID)
             if pchrs.count() == 0:
-                # Not in the db, look him up and add him
-                f = urlopen(self.url + "/pitchers/" + pitcherID + ".xml")
-                s = f.read()
-                f.close()
-                p = Player()
-                p.pid = pitcherID
-                p.first = re.search('first_name="(.*?)"', s).group(1)
-                p.last = re.search('last_name="(.*?)"', s).group(1)
-                p.put()
+                try:
+                    # Not in the db, look him up and add him
+                    f = urlopen(self.url + "/pitchers/" + pitcherID + ".xml")
+                    s = f.read()
+                    f.close()
+                    p = Player()
+                    p.pid = pitcherID
+                    p.first = re.search('first_name="(.*?)"', s).group(1)
+                    p.last = re.search('last_name="(.*?)"', s).group(1)
+                    p.put()
+                except HTTPError:
+                    # TODO: Handle this by figuring out the name. Usually lands here b/c player ID is '0'
+                    p = Player()
+                    p.pid = '0'
+                    p.first = "First"
+                    p.last = "Last"
+                    p.put()
+                    logging.error("Pitcher ID was not valid. Handled with a bogus name for now.")
             else:
                 p = pchrs.fetch(1)[0]
             # Cache the pitcher to save future trips to the db
