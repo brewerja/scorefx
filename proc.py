@@ -304,9 +304,9 @@ class procMLB(saxutils.handler.ContentHandler):
         elif word == "singles" or word == "doubles" or word == "triples":
             # Description is "on a (fly ball|ground ball|line drive|pop up)
             # to (position)" there is sometimes an adjective (soft, hard) after "on a"
-            mtch = re.search("on a.*? (fly|ground|line|pop) .*? to (\w*)", action)
+            mtch = re.search("on a.*? (fly|ground|line|pop|bunt) .*? to (\w*)", action)
             tmp = mtch.group(1)
-            if tmp == "pop":
+            if tmp == "pop" or tmp == "bunt":
                 tmp = "fly"
             code = PLAYS[tmp] + POSITIONS[mtch.group(2)]
             result = const.HIT
