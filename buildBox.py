@@ -50,7 +50,8 @@ class BoxScore :
                     toBase = 0        
                       
                 if not runnersAlready:
-                    f.write('<g xlink:title="' + b.desc + '" onmouseover="highlight(this)" onmouseout="unhighlight(this)">\n')
+                    f.write('<g onmouseover="highlight(this)" onmouseout="unhighlight(this)">\n')
+                    f.write('<title>' + b.desc + '</title>')
                 runnersAlready = False
                 self.writeBatter(inningState.team, b, toBase)
                 
@@ -82,7 +83,8 @@ class BoxScore :
                         b = inningState.batters[batter_num]
                         break
                 if not runnersAlready:
-                    f.write('<g xlink:title="' + b.desc + '" onmouseover="highlight(this)" onmouseout="unhighlight(this)">\n')
+                    f.write('<g onmouseover="highlight(this)" onmouseout="unhighlight(this)">\n')
+                    f.write('<title>' + b.desc + '</title>')
                 runnersAlready = True                    
                 for b in inningState.batters:
                     e = b.eventAt(i)
