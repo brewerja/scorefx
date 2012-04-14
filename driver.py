@@ -139,10 +139,9 @@ class PageBuilder(webapp.RequestHandler) :
 
         # Now that we've settled on a date, figure out what games are being played
         games = getGames(gameDate)
+        dte = "new Date(%d, %d, %d)" % (gameDate.year, gameDate.month-1, gameDate.day)
         template_values = {'games' : games,
-                           'year' : gameDate.strftime("%Y"),
-                           'month' : gameDate.strftime("%m"),
-                           'day' : gameDate.strftime("%d")}
+                           'dte': dte}
         path = os.path.join(os.path.dirname(__file__), 'templates/index.html')
         self.response.out.write(template.render(path, template_values))
 

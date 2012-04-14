@@ -1,1 +1,16 @@
-.scorecard { display: block; margin-left: auto; margin-right: auto; }
+.scorecard { 
+	display: block; 
+	margin-left: auto; 
+	margin-right: auto; 
+}
+#gamepicker { 
+	display: block; 
+	margin-left: auto; 
+	margin-right: auto; 
+	text-align: center;
+}
+#dte {
+	font-family: 'Trocchi', serif;
+	font-size: 48px;
+	cursor: pointer;
+}
