@@ -71,13 +71,13 @@ Site.include({
         /* Set the displayed date text. */
         var dateStr = "";
         switch (this.cur_date.getDay()) {
-        case 0: dateStr += "Sunday "; break;
-        case 1: dateStr += "Monday "; break;
-        case 2: dateStr += "Tuesday "; break;
-        case 3: dateStr += "Wednesday "; break;
-        case 4: dateStr += "Thursday "; break;
-        case 5: dateStr += "Friday "; break;
-        case 6: dateStr += "Saturday "; break;
+        case 0: dateStr += "Sunday, "; break;
+        case 1: dateStr += "Monday, "; break;
+        case 2: dateStr += "Tuesday, "; break;
+        case 3: dateStr += "Wednesday, "; break;
+        case 4: dateStr += "Thursday, "; break;
+        case 5: dateStr += "Friday, "; break;
+        case 6: dateStr += "Saturday, "; break;
         }
         switch (this.cur_date.getMonth()) {
         case  0: dateStr += "January "; break;
