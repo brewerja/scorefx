@@ -1,60 +1,24 @@
 <html>
 <head>
  <title>Allen Scorecard Creator</title>
+ <link rel="stylesheet" type="text/css" href="/static/css/main.css" />
+ <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
+ <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js"></script>
+ <script type="text/javascript" src="/static/js/main.js"></script>
  <script type="text/javascript">
-<!--
-function setSelection(sel, value) {
- for (i=0; i < sel.options.length; i++) {
-  if (sel.options[i].value == value) {
-    sel.selectedIndex = i;
-    return;
-  }
- }
-}
-
-function setStartDate() {
- setSelection(document.getElementById("month"), {{ month }});
- setSelection(document.getElementById("day"), {{ day }});
- setSelection(document.getElementById("year"), {{ year }});
-}
-
-function dateChange(form) {
- // Clear the game drop-down
- gameSel = form.gameID;
- gameSel.options.length = 0;
- // Request the list of games for the new date
- var url = "getgames?";
- url += "month=" + form.month.value;
- url += "&day=" + form.day.value;
- url += "&year=" + form.year.value;
-
- var req = new XMLHttpRequest();
- req.open("GET",url,false);
- req.send("");
- games = req.responseText;
-
- gameList = eval("(" + games + ")");
- for (i = 0; i < gameList.length; i++) {
-  gameSel.options.add(new Option(gameList[i].away + " @ " + gameList[i].home, gameList[i].url));
- }
-}
- 
-function updateScorecard(form) {
- var url = "scorecard?";
- url += "month=" + form.month.value;
- url += "&day=" + form.day.value;
- url += "&year=" + form.year.value;
- url += "&gameID=" + form.gameID.value;
- document.getElementById("scorecard").innerHTML = '<embed src="' + url + '" />';
-}
-
-//-->
+$(function() {
+  setStartDate("{{month}}", "{{day}}", "{{year}}");
+  $("#month").change(dateChange);
+  $("#day").change(dateChange);
+  $("#year").change(dateChange);
+  $("#view_scorecard").click(updateScorecard);
+});  
  </script>
 </head>
-<body onLoad="setStartDate()">
+<body>
 
 <form action="/choosegame" method="get">
- <select id="month" name="month" onchange="dateChange(this.form)">
+ <select id="month" name="month">
   <option value="01">1</option>
   <option value="02">2</option>
   <option value="03">3</option>
@@ -68,7 +32,7 @@ function updateScorecard(form) {
   <option value="11">11</option>
   <option value="12">12</option>
  </select>
- <select id="day" name="day" onchange="dateChange(this.form)">
+ <select id="day" name="day">
   <option value="01">1</option>
   <option value="02">2</option>
   <option value="03">3</option>
@@ -101,7 +65,7 @@ function updateScorecard(form) {
   <option value="30">30</option>
   <option value="31">31</option>
  </select>
- <select id="year" name="year" onchange="dateChange(this.form)">
+ <select id="year" name="year">
   <option value="2008">2008</option>
   <option value="2009">2009</option>
   <option value="2010">2010</option>
@@ -113,7 +77,7 @@ function updateScorecard(form) {
     <option value="{{ game.url }}">{{ game.away }} @ {{ game.home }}</option>
    {% endfor %}
  </select>
- <input type="button" value="View Scorecard" onClick="updateScorecard(this.form)">
+ <input type="button" value="View Scorecard" id="view_scorecard">
 </form>
 
 <hr>

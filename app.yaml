@@ -8,6 +8,12 @@ handlers:
   script: $PYTHON_LIB/google/appengine/ext/remote_api/handler.py
   login: admin
 
+- url: /static/js
+  static_dir: scripts
+
+- url: /static/css
+  static_dir: stylesheets
+
 - url: /.*
   script: driver.py
 
