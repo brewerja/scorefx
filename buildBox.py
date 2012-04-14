@@ -21,7 +21,7 @@ class BoxScore :
     # awayX is the top left corner of away's box
     # homeX is the top right corner of home's box
     # this lets us lay out the boxes the same, only changing from + to -
-    awayX = 50
+    awayX = 1
     awayY = boxBuffer
     homeX = awayX + boxWidth + space + boxWidth
     homeY = awayY
