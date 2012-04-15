@@ -15,37 +15,37 @@ from google.appengine.ext.webapp.util import run_wsgi_app
 from buildBox import BoxScore
 from proc import procMLB, Player
 
-TEAMS = {"ana": "LAA",
-         "ari": "ARI",
-         "atl": "ATL",
-         "bal": "BAL",
-         "bos": "BOS",
-         "cha": "CWS",
-         "chn": "CHC",
-         "cin": "CIN",
-         "cle": "CLE",
-         "col": "COL",
-         "det": "DET",
-         "flo": "FLA",
-         "hou": "HOU",
-         "kca": "KC",
-         "lan": "LAD",
-         "mia": "MIA",
-         "mil": "MIL",
-         "min": "MIN",
-         "nya": "NYY",
-         "nyn": "NYM",
-         "oak": "OAK",
-         "phi": "PHI",
-         "pit": "PIT",
-         "sea": "SEA",
-         "sfn": "SF",
-         "sln": "STL",
-         "sdn": "SD",
-         "tba": "TB",
-         "tex": "TEX",
-         "tor": "TOR",
-         "was": "WAS"}
+TEAMS = {'ana': 'LAA',
+         'ari': 'ARI',
+         'atl': 'ATL',
+         'bal': 'BAL',
+         'bos': 'BOS',
+         'cha': 'CWS',
+         'chn': 'CHC',
+         'cin': 'CIN',
+         'cle': 'CLE',
+         'col': 'COL',
+         'det': 'DET',
+         'flo': 'FLA',
+         'hou': 'HOU',
+         'kca': 'KC',
+         'lan': 'LAD',
+         'mia': 'MIA',
+         'mil': 'MIL',
+         'min': 'MIN',
+         'nya': 'NYY',
+         'nyn': 'NYM',
+         'oak': 'OAK',
+         'phi': 'PHI',
+         'pit': 'PIT',
+         'sea': 'SEA',
+         'sfn': 'SF',
+         'sln': 'STL',
+         'sdn': 'SD',
+         'tba': 'TB',
+         'tex': 'TEX',
+         'tor': 'TOR',
+         'was': 'WAS'}
 
 
 class Game:
@@ -55,34 +55,28 @@ class Game:
         self.away = away
 
     def jsonString(self):
-        ret = "{"
-        ret += '"url": "' + self.url + '"'
-        ret += ', "home": "' + self.home + '"'
-        ret += ', "away": "' + self.away + '"'
-        ret += "}"
+        ret = '{"url": "%s", "home": "%s", away: "%s"}' % (self.url, self.home,
+                                                           self.away)
         return ret
 
 
 def getGames(gameDate):
-        year = gameDate.strftime("%Y")
-        month = gameDate.strftime("%m")
-        date = gameDate.strftime("%d")
+        year = gameDate.strftime('%Y')
+        month = gameDate.strftime('%m')
+        date = gameDate.strftime('%d')
 
-        url = ('http://gd2.mlb.com/components/game/mlb/year_' +
-               year + '/month_' + month +
-              '/day_' + date + '/')
+        url = ('http://gd2.mlb.com/components/game/mlb/year_%s/month_%s/'
+               'day_%s/') % (year, month, date)
 
-        f = urlopen(url)
-        data = f.read()
-        f.close()
+        data = urlopen(url).read()
 
         games = []
         for game in re.findall('href="(gid_%s_%s_%s.*?)"' % (year, month,
                                                              date), data):
-            away = game.split("_")[4][:3]
+            away = game.split('_')[4][:3]
             if 'mlb' in away:
                 away = away[0:3]
-            home = game.split("_")[5][:3]
+            home = game.split('_')[5][:3]
             if 'mlb' in home:
                 home = home[0:3]
             if away in TEAMS and home in TEAMS:
@@ -94,10 +88,10 @@ def getGames(gameDate):
 class GameLister(webapp.RequestHandler):
     def get(self):
         # Translate the passed-in args to a datetime object
-        year = self.request.get("year")
-        month = self.request.get("month")
-        day = self.request.get("day")
-        gameDate = datetime.strptime(year + month + day, "%Y%m%d")
+        year = self.request.get('year')
+        month = self.request.get('month')
+        day = self.request.get('day')
+        gameDate = datetime.strptime(year + month + day, '%Y%m%d')
 
         # Get the games for the requested day
         games = getGames(gameDate)
@@ -106,8 +100,8 @@ class GameLister(webapp.RequestHandler):
         gamesJSON = '[\n'
         for game in games:
             gamesJSON += game.jsonString()
-            gamesJSON += ",\n"
-        gamesJSON = gamesJSON.strip(",\n")
+            gamesJSON += ',\n'
+        gamesJSON = gamesJSON.strip(',\n')
         gamesJSON += '\n]\n'
 
         # Return the JSON
@@ -123,13 +117,11 @@ class PageBuilder(webapp.RequestHandler):
         # manually.
         gameDate = datetime.utcnow()
         gameDate -= timedelta(hours=4)
-        url = 'http://gd2.mlb.com/components/game/mlb/year_' + \
-              gameDate.strftime("%Y") + '/month_' + gameDate.strftime("%m") + \
-              '/day_' + gameDate.strftime("%d") + '/master_scoreboard.xml'
-
-        f = urlopen(url)
-        data = f.read()
-        f.close()
+        url = ('http://gd2.mlb.com/components/game/mlb/year_%s/month_%s/'
+               'day_%s/master_scoreboard.xml') % (gameDate.strftime('%Y'),
+                                                  gameDate.strftime('%m'),
+                                                  gameDate.strftime('%d'))
+        data = urlopen(url).read()
 
         # We don't bother with parsing XML since we know exactly what we're
         # looking for.
@@ -139,7 +131,7 @@ class PageBuilder(webapp.RequestHandler):
         started = False
         for mtch in times:
             t = datetime.strptime(mtch.group(1) + mtch.group(2),
-                                  "%I:%M%p").time()
+                                  '%I:%M%p').time()
             if (t < curTime):
                 started = True
                 break
@@ -149,7 +141,7 @@ class PageBuilder(webapp.RequestHandler):
         # Now that we've settled on a date,
         # figure out what games are being played
         games = getGames(gameDate)
-        dte = ("new Date(%d, %d, %d)" %
+        dte = ('new Date(%d, %d, %d)' %
                (gameDate.year, gameDate.month - 1, gameDate.day))
         template_values = {'games': games,
                            'dte': dte}
@@ -166,52 +158,48 @@ class DateChooser(webapp.RequestHandler):
 
 class GameChooser(webapp.RequestHandler):
     def get(self):
-        year = self.request.get("year")
-        month = self.request.get("month")
-        day = self.request.get("day")
-        url = 'http://gd2.mlb.com/components/game/mlb/year_' + \
-              year + '/month_' + month + '/day_' + day + '/'
+        year = self.request.get('year')
+        month = self.request.get('month')
+        day = self.request.get('day')
+        url = ('http://gd2.mlb.com/components/game/mlb/year_%s/month_%s/'
+               'day_%s/') % (year, month, day)
 
-        f = urlopen(url)
-        data = f.read()
-        f.close()
+        data = urlopen(url).read()
 
         games = []
         for game in re.findall('href="(gid.*?)"', data):
-            away = game.split("_")[4][:3]
+            away = game.split('_')[4][:3]
             if 'mlb' in away:
                 away = away[0:3]
-            home = game.split("_")[5][:3]
+            home = game.split('_')[5][:3]
             if 'mlb' in home:
                 home = home[0:3]
             if away in TEAMS and home in TEAMS:
                 games.append(Game(game.rstrip('/'), TEAMS[away], TEAMS[home]))
 
-        template_values = {'games': games,
-                           'year': year,
-                           'month': month,
+        template_values = {'games': games, 'year': year, 'month': month,
                            'day': day}
-        path = os.path.join(os.path.dirname(__file__), \
+        path = os.path.join(os.path.dirname(__file__),
                             'templates/gamechooser.html')
         self.response.out.write(template.render(path, template_values))
 
 
 class PlayerLookup(webapp.RequestHandler):
     def get(self):
-        pid = self.request.get("batterID")
-        players = Player.gql("WHERE pid = :1", pid)
+        pid = self.request.get('batterID')
+        players = Player.gql('WHERE pid = :1', pid)
         for p in players:
-            self.response.out.write(p.pid + " - " + p.first[0] + ". " + p.last)
+            self.response.out.write(p.pid + ' - ' + p.first[0] + '. ' + p.last)
 
 
 class BuildScorecard(webapp.RequestHandler):
     def get(self):
-        year = self.request.get("year")
-        month = self.request.get("month")
-        day = self.request.get("day")
-        gid = self.request.get("gameID")
-        url = 'http://gd2.mlb.com/components/game/mlb/year_' + \
-               year + '/month_' + month + '/day_' + day + '/' + gid
+        year = self.request.get('year')
+        month = self.request.get('month')
+        day = self.request.get('day')
+        gid = self.request.get('gameID')
+        url = ('http://gd2.mlb.com/components/game/mlb/year_%s/month_%s/'
+               'day_%s/%s') % (year, month, day, gid)
 
         self.response.headers['Content-type'] = 'image/svg+xml'
         box = BoxScore(self.response.out)
@@ -226,13 +214,10 @@ class BuildScorecard(webapp.RequestHandler):
         parser.setContentHandler(p)
 
         # Read the inning directory and process each inning
-        f = urlopen(url + '/inning')
-        s = f.read()
-        f.close()
+        s = urlopen(url + '/inning').read()
+
         for i in range(1, len(re.findall('"inning_\d+\.xml"', s)) + 1):
-            f = urlopen(url + '/inning/inning_' + str(i) + '.xml')
-            parser.parse(f)
-            f.close()
+            parser.parse(urlopen(url + '/inning/inning_' + str(i) + '.xml'))
             if i == len(re.findall('"inning_\d+\.xml"', s)):
                 box.endInning(gameOver=True)
             else:
