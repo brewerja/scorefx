@@ -149,41 +149,6 @@ class PageBuilder(webapp.RequestHandler):
         self.response.out.write(template.render(path, template_values))
 
 
-class DateChooser(webapp.RequestHandler):
-    def get(self):
-        path = os.path.join(os.path.dirname(__file__), \
-                            'templates/datechooser.html')
-        self.response.out.write(template.render(path, None))
-
-
-class GameChooser(webapp.RequestHandler):
-    def get(self):
-        year = self.request.get('year')
-        month = self.request.get('month')
-        day = self.request.get('day')
-        url = ('http://gd2.mlb.com/components/game/mlb/year_%s/month_%s/'
-               'day_%s/') % (year, month, day)
-
-        data = urlopen(url).read()
-
-        games = []
-        for game in re.findall('href="(gid.*?)"', data):
-            away = game.split('_')[4][:3]
-            if 'mlb' in away:
-                away = away[0:3]
-            home = game.split('_')[5][:3]
-            if 'mlb' in home:
-                home = home[0:3]
-            if away in TEAMS and home in TEAMS:
-                games.append(Game(game.rstrip('/'), TEAMS[away], TEAMS[home]))
-
-        template_values = {'games': games, 'year': year, 'month': month,
-                           'day': day}
-        path = os.path.join(os.path.dirname(__file__),
-                            'templates/gamechooser.html')
-        self.response.out.write(template.render(path, template_values))
-
-
 class PlayerLookup(webapp.RequestHandler):
     def get(self):
         pid = self.request.get('batterID')
@@ -227,8 +192,6 @@ class BuildScorecard(webapp.RequestHandler):
 
 APPLICATION = webapp.WSGIApplication([('/', PageBuilder),
                                       ('/getgames', GameLister),
-                                      ('/choosedate', DateChooser),
-                                      ('/choosegame', GameChooser),
                                       ('/scorecard', BuildScorecard),
                                       ('/player', PlayerLookup)],
                                      debug=True)
