@@ -71,7 +71,9 @@ class procMLB(saxutils.handler.ContentHandler):
         self.pitcher = ''
         self.outs = '0'
         self.batterObj = None
-
+        self.away_score = 0
+        self.home_score = 0
+        
     def startElement(self, name, attrs):
         if (name == 'top'):
             self.curTeam = "A"
@@ -136,6 +138,10 @@ class procMLB(saxutils.handler.ContentHandler):
             if attrs.get('score') == "T":
                 willScore = True
                 toBase = "4B"
+                if self.curTeam == "A":
+                    self.away_score += 1
+                else:
+                    self.home_score += 1
             # stranded at the end of an inning, or out!?
             elif toBase == '' and self.outs == 3:
                 toBase = fromBase

@@ -47,6 +47,35 @@ TEAMS = {'ana': 'LAA',
          'tor': 'TOR',
          'was': 'WAS'}
 
+LOGOS = {'ana' : 'ana',
+         'ari' : 'ari',
+         'atl' : 'atl',
+         'bal' : 'bal',
+         'bos' : 'bos',
+         'cha' : 'cws',
+         'chn' : 'chc',
+         'cin' : 'cin',
+         'cle' : 'cle',
+         'flo' : 'fla',
+         'hou' : 'hou',
+         'kca' : 'kc',
+         'lan' : 'la',
+         'mia' : 'mia',
+         'mil' : 'mil',
+         'min' : 'min',
+         'nya' : 'nyy',
+         'nyn' : 'nym',
+         'oak' : 'oak',
+         'phi' : 'phi',
+         'pit' : 'pit',
+         'sea' : 'sea',
+         'sfn' : 'sf',
+         'sln' : 'stl',
+         'sdn' : 'sd',
+         'tba' : 'tb',
+         'tex' : 'tex',
+         'tor' : 'tor',
+         'was' : 'was'}
 
 class Game:
     def __init__(self, url, away, home):
@@ -163,11 +192,18 @@ class BuildScorecard(webapp.RequestHandler):
         month = self.request.get('month')
         day = self.request.get('day')
         gid = self.request.get('gameID')
+
         url = ('http://gd2.mlb.com/components/game/mlb/year_%s/month_%s/'
                'day_%s/%s') % (year, month, day, gid)
 
         self.response.headers['Content-type'] = 'image/svg+xml'
-        box = BoxScore(self.response.out)
+
+        # Figure out which teams are playing.  MLB uses inconsistent codes
+        # to represent teams (i.e. nya & nyy for the Yanks) so translate
+        # from the code in the gid to the code for the logo PNG
+        away_code = LOGOS.get(gid.split('_')[4][:3], None)
+        home_code = LOGOS.get(gid.split('_')[5][:3], None)
+        box = BoxScore(away_code, home_code, self.response.out)
 
         # Create a parser
         parser = make_parser()
@@ -187,7 +223,7 @@ class BuildScorecard(webapp.RequestHandler):
                 box.endInning(gameOver=True)
             else:
                 box.endInning()
-        box.endBox(p.homePitchers, p.awayPitchers)
+        box.endBox(p.homePitchers, p.awayPitchers, p.away_score, p.home_score)
 
 
 APPLICATION = webapp.WSGIApplication([('/', PageBuilder),

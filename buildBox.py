@@ -26,6 +26,10 @@ class BoxScore:
     awayY = boxBuffer
     homeX = awayX + boxWidth + space + boxWidth
     homeY = awayY
+    awayScoreX = awayX + boxWidth - runnersWidth / 2
+    awayScoreY = 34
+    homeScoreX = homeX - boxWidth + runnersWidth / 2
+    homeScoreY = 34
     pitcherBuf = 20
     batterHeight = 17
     curHomeBatter = homeY
@@ -33,7 +37,9 @@ class BoxScore:
     inning = 1
     lastInningY = awayY
 
-    def __init__(self, outfile):
+    def __init__(self, away_code, home_code, outfile):
+        self.away_code = away_code
+        self.home_code = home_code
         self.imgFile = outfile
         self.imgFileTmp = tempfile.TemporaryFile()
 
@@ -98,6 +104,27 @@ class BoxScore:
                                                duringAB=True)
         f.write('\n')
 
+    def write_scores(self, away_score, home_score):
+        self.write_logos()
+        self.writeText(str(away_score), self.awayScoreX, self.awayScoreY, size=28, anchor="middle")
+        self.writeText(str(home_score), self.homeScoreX, self.homeScoreY, size=28, anchor="middle")
+        
+    def write_logos(self):
+        f = self.imgFileTmp
+        away_logo = home_logo = 'http://mlb.mlb.com/images/icons/mlb_logo.gif'
+        if self.away_code:
+            away_logo = 'http://mlb.mlb.com/images/logos/80x80/%s.png' % (self.away_code)
+        if self.home_code:
+            home_logo = 'http://mlb.mlb.com/images/logos/80x80/%s.png' % (self.home_code)
+
+        w = 40
+        h = 40
+        x = self.awayX
+        y = 0
+        f.write('<image width="%d" height="%d" x="%d" y="%d" xlink:href="%s" />\n' % (w, h, x, y, away_logo))
+        x = self.homeX - w
+        f.write('<image width="%d" height="%d" x="%d" y="%d" xlink:href="%s" />\n' % (w, h, x, y, home_logo))
+         
     def writeLine(self, x1, y1, x2, y2, color='black', sw='1'):
         f = self.imgFileTmp
         f.write(' <line x1="' + str(x1) + '" y1="' + str(y1) + '" x2="' +
@@ -157,7 +184,7 @@ class BoxScore:
         y = self.homeY
         self.writeLine(x, y, x - w, y, 'gray', '.4')
 
-    def endBox(self, homePitchers, awayPitchers):
+    def endBox(self, homePitchers, awayPitchers, away_score, home_score):
         f = self.imgFileTmp
         h = self.curHomeBatter - self.homeY + 2
 
@@ -403,6 +430,7 @@ function moveToBottom(src)
         self.imgFileTmp = img
         f = img
 
+        self.write_scores(away_score, home_score)
         f.write('<g id="boxOutline">\n')
 
         self.startBox()
