@@ -8,76 +8,16 @@ from urllib2 import urlopen
 from xml.sax import make_parser
 from xml.sax.handler import feature_namespaces
 
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp import template
-from google.appengine.ext.webapp.util import run_wsgi_app
+import webapp2
+import jinja2
 
 from buildBox import BoxScore
 from proc import procMLB, Player
+from constants import TEAMS, LOGOS
 
-TEAMS = {'ana': 'LAA',
-         'ari': 'ARI',
-         'atl': 'ATL',
-         'bal': 'BAL',
-         'bos': 'BOS',
-         'cha': 'CWS',
-         'chn': 'CHC',
-         'cin': 'CIN',
-         'cle': 'CLE',
-         'col': 'COL',
-         'det': 'DET',
-         'flo': 'FLA',
-         'hou': 'HOU',
-         'kca': 'KC',
-         'lan': 'LAD',
-         'mia': 'MIA',
-         'mil': 'MIL',
-         'min': 'MIN',
-         'nya': 'NYY',
-         'nyn': 'NYM',
-         'oak': 'OAK',
-         'phi': 'PHI',
-         'pit': 'PIT',
-         'sea': 'SEA',
-         'sfn': 'SF',
-         'sln': 'STL',
-         'sdn': 'SD',
-         'tba': 'TB',
-         'tex': 'TEX',
-         'tor': 'TOR',
-         'was': 'WAS'}
-
-LOGOS = {'ana': 'ana',
-         'ari': 'ari',
-         'atl': 'atl',
-         'bal': 'bal',
-         'bos': 'bos',
-         'cha': 'cws',
-         'chn': 'chc',
-         'cin': 'cin',
-         'cle': 'cle',
-         'col': 'col',
-         'det': 'det',
-         'flo': 'fla',
-         'hou': 'hou',
-         'kca': 'kc',
-         'lan': 'la',
-         'mia': 'mia',
-         'mil': 'mil',
-         'min': 'min',
-         'nya': 'nyy',
-         'nyn': 'nym',
-         'oak': 'oak',
-         'phi': 'phi',
-         'pit': 'pit',
-         'sea': 'sea',
-         'sfn': 'sf',
-         'sln': 'stl',
-         'sdn': 'sd',
-         'tba': 'tb',
-         'tex': 'tex',
-         'tor': 'tor',
-         'was': 'was'}
+template_dir = os.path.join(os.path.dirname(__file__), 'templates')
+jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir),
+                               autoescape=True)
 
 
 class Game:
@@ -117,7 +57,7 @@ def getGames(gameDate):
         return games
 
 
-class GameLister(webapp.RequestHandler):
+class GameLister(webapp2.RequestHandler):
     def get(self):
         # Translate the passed-in args to a datetime object
         year = self.request.get('year')
@@ -141,7 +81,7 @@ class GameLister(webapp.RequestHandler):
         self.response.out.write(gamesJSON)
 
 
-class PageBuilder(webapp.RequestHandler):
+class PageBuilder(webapp2.RequestHandler):
     def get(self):
         # Figure out at which day to set the calendar.
         # If no game has started today, use yesterday.
@@ -175,13 +115,12 @@ class PageBuilder(webapp.RequestHandler):
         games = getGames(gameDate)
         dte = ('new Date(%d, %d, %d)' %
                (gameDate.year, gameDate.month - 1, gameDate.day))
-        template_values = {'games': games,
-                           'dte': dte}
-        path = os.path.join(os.path.dirname(__file__), 'templates/index.html')
-        self.response.out.write(template.render(path, template_values))
+        template_values = {'games': games, 'dte': dte}
+        t = jinja_env.get_template('index.html')
+        self.response.out.write(t.render(template_values))
 
 
-class PlayerLookup(webapp.RequestHandler):
+class PlayerLookup(webapp2.RequestHandler):
     def get(self):
         pid = self.request.get('batterID')
         players = Player.gql('WHERE pid = :1', pid)
@@ -189,7 +128,7 @@ class PlayerLookup(webapp.RequestHandler):
             self.response.out.write(p.pid + ' - ' + p.first[0] + '. ' + p.last)
 
 
-class BuildScorecard(webapp.RequestHandler):
+class BuildScorecard(webapp2.RequestHandler):
     def get(self):
         year = self.request.get('year')
         month = self.request.get('month')
@@ -229,15 +168,9 @@ class BuildScorecard(webapp.RequestHandler):
         box.endBox(p.homePitchers, p.awayPitchers, p.away_score, p.home_score)
 
 
-APPLICATION = webapp.WSGIApplication([('/', PageBuilder),
-                                      ('/getgames', GameLister),
-                                      ('/scorecard', BuildScorecard),
-                                      ('/player', PlayerLookup)],
-                                     debug=True)
-
-
-def main():
-    run_wsgi_app(APPLICATION)
-
-if __name__ == '__main__':
-    main()
+app = webapp2.WSGIApplication([
+    ('/', PageBuilder),
+    ('/getgames', GameLister),
+    ('/scorecard', BuildScorecard),
+    ('/player', PlayerLookup)
+], debug=True)

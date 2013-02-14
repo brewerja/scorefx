@@ -1,3 +1,5 @@
+<!DOCTYPE html>
+
 <html>
   <head>
 	<title>Allen Scorecard Creator</title>
@@ -22,7 +24,7 @@
 		<input type="hidden" id="datepicker" />
 		<select id="gameID" name="gameID">
 		  {% for game in games %}
-		  <option value="{{ game.url }}">{{ game.away }} @ {{ game.home }}</option>
+              <option value="{{ game.url }}">{{ game.away }} @ {{ game.home }}</option>
 		  {% endfor %}
 		</select>
 		<input type="button" value="View Scorecard" id="view_scorecard">

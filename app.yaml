@@ -1,13 +1,10 @@
 application: scorecardbuilder-hrd
 version: 1
-runtime: python
+runtime: python27
 api_version: 1
+threadsafe: true
 
 handlers:
-- url: /remote_api
-  script: $PYTHON_LIB/google/appengine/ext/remote_api/handler.py
-  login: admin
-
 - url: /static/js
   static_dir: scripts
 
@@ -15,4 +12,8 @@ handlers:
   static_dir: stylesheets
 
 - url: /.*
-  script: driver.py
+  script: driver.app
+
+libraries:
+- name: jinja2
+  version: latest
