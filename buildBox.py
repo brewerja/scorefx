@@ -75,7 +75,7 @@ class BoxScore:
 
                 for b in inningState.batters:
                     e = b.eventAt(i)
-                    if e != None:
+                    if e is not None:
                         if e.type_ == 'RunnerAdvance':
                             self.advanceRunner(inningState.team, e,
                                                duringAB=duringAB)
@@ -98,7 +98,7 @@ class BoxScore:
                 runnersAlready = True
                 for b in inningState.batters:
                     e = b.eventAt(i)
-                    if e != None:
+                    if e is not None:
                         if e.type_ == 'RunnerAdvance':
                             self.advanceRunner(inningState.team, e,
                                                duringAB=True)
@@ -106,16 +106,20 @@ class BoxScore:
 
     def write_scores(self, away_score, home_score):
         self.write_logos()
-        self.writeText(str(away_score), self.awayScoreX, self.awayScoreY, size=28, anchor="middle")
-        self.writeText(str(home_score), self.homeScoreX, self.homeScoreY, size=28, anchor="middle")
-        
+        self.writeText(str(away_score), self.awayScoreX, self.awayScoreY,
+                       size=28, anchor="middle")
+        self.writeText(str(home_score), self.homeScoreX, self.homeScoreY,
+                       size=28, anchor="middle")
+
     def write_logos(self):
         f = self.imgFileTmp
         away_logo = home_logo = 'http://mlb.mlb.com/images/icons/mlb_logo.gif'
         if self.away_code:
-            away_logo = 'http://mlb.mlb.com/images/logos/80x80/%s.png' % (self.away_code)
+            away_logo = ('http://mlb.mlb.com/images/logos/80x80/%s.png' %
+                         self.away_code)
         if self.home_code:
-            home_logo = 'http://mlb.mlb.com/images/logos/80x80/%s.png' % (self.home_code)
+            home_logo = ('http://mlb.mlb.com/images/logos/80x80/%s.png' %
+                         self.home_code)
 
         w = 40
         h = 40
@@ -124,7 +128,7 @@ class BoxScore:
         f.write('<image width="%d" height="%d" x="%d" y="%d" xlink:href="%s" />\n' % (w, h, x, y, away_logo))
         x = self.homeX - w
         f.write('<image width="%d" height="%d" x="%d" y="%d" xlink:href="%s" />\n' % (w, h, x, y, home_logo))
-         
+
     def writeLine(self, x1, y1, x2, y2, color='black', sw='1'):
         f = self.imgFileTmp
         f.write(' <line x1="' + str(x1) + '" y1="' + str(y1) + '" x2="' +
@@ -134,7 +138,7 @@ class BoxScore:
     def writeText(self, txt, x, y, rot=0, rx=-1, ry=-1, anchor=None, size=10,
                   color="black", weight="normal", flip=False, id_=None):
         f = self.imgFileTmp
-        if (flip == True):
+        if flip:
             f.write(' <text x="0" y="0" transform="matrix(-1 0 0 1 ' +
                     str(x) + ' ' + str(y) + ')" ')
         else:
@@ -151,7 +155,7 @@ class BoxScore:
         f.write(' fill="' + color + '"')
         f.write(' style="font-family:Arial; font-size: ' + str(size) +
                 'pt; font-weight:' + weight + ';"')
-        if id_ != None:
+        if id_ is not None:
             f.write(' id="' + id_ + '"')
         f.write('>' + txt + '</text>\n')
 
@@ -171,8 +175,6 @@ class BoxScore:
         self.writeLine(x1, y2, x2, y1, 'gray')
 
     def startBox(self):
-        f = self.imgFileTmp
-
         # Start the away box
         x = self.awayX
         y = self.awayY
@@ -499,7 +501,7 @@ function moveToBottom(src)
         if base > 0:
             x2 = x + m * self.bases[base]
 
-            if willScore == True:
+            if willScore:
                 color = 'black'
                 sw = '2'
             else:
@@ -568,7 +570,7 @@ function moveToBottom(src)
         x2 = x + m * self.bases[toBase]
         y1 = y2 - self.batterHeight
 
-        if duringAB == True:
+        if duringAB:
             if toBase_in[1] == 'X':
                 y1 = y2
                 y2 = y1 + self.batterHeight / 2
@@ -578,7 +580,7 @@ function moveToBottom(src)
             if fromBase_in[1] == 'X':
                 y1 += self.batterHeight / 2
 
-        if willScore == True:
+        if willScore:
             color = 'black'
             sw = '2'
         else:
@@ -596,7 +598,7 @@ function moveToBottom(src)
             if toBase == 4:
                 self.writeCircle(x2, y2, 3)
             else:
-                if willScore == True:
+                if willScore:
                     self.writeCircle(x2, y2, 2)
                 else:
                     self.writeCircle(x2, y2, 2, 'gray')

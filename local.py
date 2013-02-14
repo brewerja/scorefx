@@ -19,7 +19,7 @@ if __name__ == '__main__':
     img = open("box.svg", "w")
     box = BoxScore(img)
     box.startBox()
-    
+
     # Create a parser
     parser = make_parser()
     # Tell the parser we are not interested in XML namespaces
@@ -33,7 +33,7 @@ if __name__ == '__main__':
     f = urlopen(url + '/inning')
     s = f.read()
     f.close()
-    for i in range(1, len(re.findall('"inning_\d+\.xml"', s)) + 1) :
+    for i in range(1, len(re.findall('"inning_\d+\.xml"', s)) + 1):
         f = urlopen(url + '/inning/inning_' + str(i) + '.xml')
         parser.parse(f)
         f.close()

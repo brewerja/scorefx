@@ -7,7 +7,6 @@ from xml.sax import make_parser, saxutils
 from xml.sax.handler import feature_namespaces
 
 import re
-import sys
 
 playerIDs = set()
 outfil = None

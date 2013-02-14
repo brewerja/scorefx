@@ -3,7 +3,7 @@
 import os
 import re
 
-from datetime import date, datetime, time, timedelta
+from datetime import datetime, timedelta
 from urllib2 import urlopen
 from xml.sax import make_parser
 from xml.sax.handler import feature_namespaces

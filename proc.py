@@ -13,35 +13,35 @@ import const
 from models import InningState
 
 WORDS = ["ground",
-        "grounds",
-        "walks",
-        "flies",
-        "hits",
-        "strikes",
-        "singles",
-        "doubles",
-        "triples",
-        "homers",
-        "lines",
-        "called",
-        "hit",
-        "hits",
-        "pops",
-        "reaches",
-        "out"]
+         "grounds",
+         "walks",
+         "flies",
+         "hits",
+         "strikes",
+         "singles",
+         "doubles",
+         "triples",
+         "homers",
+         "lines",
+         "called",
+         "hit",
+         "hits",
+         "pops",
+         "reaches",
+         "out"]
 PLAYS = {"strikeout": "K",
-          "strikeout_looking": "Kl",
-          "walk": "BB",
-          "ground": "G",
-          "fly": "F",
-          "line": "L",
-          "home run": "HR",
-          "error": "E",
-          "sac fly": "SF",
-          "sac bunt": "SH",
-          "fielder's choice": "FC",
-          "hit by pitch": "HB",
-          "catcher interference": "CI"}
+         "strikeout_looking": "Kl",
+         "walk": "BB",
+         "ground": "G",
+         "fly": "F",
+         "line": "L",
+         "home run": "HR",
+         "error": "E",
+         "sac fly": "SF",
+         "sac bunt": "SH",
+         "fielder's choice": "FC",
+         "hit by pitch": "HB",
+         "catcher interference": "CI"}
 POSITIONS = {"pitcher": "1",
              "catcher": "2",
              "first": "3",
@@ -73,7 +73,7 @@ class procMLB(saxutils.handler.ContentHandler):
         self.batterObj = None
         self.away_score = 0
         self.home_score = 0
-        
+
     def startElement(self, name, attrs):
         if (name == 'top'):
             self.curTeam = "A"
@@ -97,9 +97,9 @@ class procMLB(saxutils.handler.ContentHandler):
 
         elif (name == 'atbat'):
             # Get the SP or a RP who hasn't put anyone out.
-            if self.reliefNoOutsFlag == True or \
-               (not self.homePitchers and self.curTeam == "A") or \
-               (not self.awayPitchers and self.curTeam == "H"):
+            if (self.reliefNoOutsFlag is True or
+                    (not self.homePitchers and self.curTeam == "A") or
+                    (not self.awayPitchers and self.curTeam == "H")):
                 self.updatePitcher(attrs.get('pitcher'))
                 self.reliefNoOutsFlag = False
 
@@ -212,7 +212,7 @@ class procMLB(saxutils.handler.ContentHandler):
             self.desc = ''
             # If there is not a runner tag for the batter,
             # then you don't need the extra stuff.
-            if self.noBatterRunner == True:
+            if self.noBatterRunner:
                 self.inningState.addBatter(self.batterObj)
                 if self.batterObj.code == '--':
                     self.inningState.advRunners(duringAB=True, endAB=True)
@@ -329,7 +329,7 @@ class procMLB(saxutils.handler.ContentHandler):
                 result = const.ERROR
             if re.search("reaches on a fielder's choice", action):
                 mtch = re.search("fielded by (\w*)", action)
-                if mtch == None:
+                if not mtch:
                     mtch = re.search(("reaches on a fielder's choice out, "
                                       "(\w*)"), action)
                 code = PLAYS["fielder's choice"] + POSITIONS[mtch.group(1)]
@@ -421,12 +421,12 @@ class procMLB(saxutils.handler.ContentHandler):
         batters = len(self.inningState.batters)
         if self.curTeam == "A":
             if (not self.homePitchers or
-                self.pitcher != self.homePitchers[-1][0]):
+                    self.pitcher != self.homePitchers[-1][0]):
                 self.homePitchers.append([self.pitcher,
                                           self.box.getCurBatter("A", batters)])
         elif self.curTeam == "H":
             if (not self.awayPitchers or
-                self.pitcher != self.awayPitchers[-1][0]):
+                    self.pitcher != self.awayPitchers[-1][0]):
                 self.awayPitchers.append([self.pitcher,
                                           self.box.getCurBatter("H", batters)])
 

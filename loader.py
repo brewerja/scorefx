@@ -1,7 +1,4 @@
-import datetime
-from google.appengine.ext import db
 from google.appengine.tools import bulkloader
-import models
 
 
 class BatterLoader(bulkloader.Loader):

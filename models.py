@@ -36,7 +36,7 @@ class InningState:
         # The base where the player is currently.
         batterObj.onBase = toBase
 
-        if out == False and toBase != HOME:
+        if not out and toBase != HOME:
             self.onBase[batterObj.pid] = batterObj
         return batterObj
 
@@ -45,7 +45,7 @@ class InningState:
            It depends whether the runners are advancing during an AB (SB, etc.)
            or as a result of the AB, how they are processed. It also matters
            if the runner's actions end the AB (CS to end inning, etc.)."""
-        if duringAB == False:
+        if not duringAB:
             # Hold runners who are already on base, but who did not move.
             for key, runnerObj in self.onBase.items():
                 if key not in self.runnerStack and self.batters[-1].pid != key:
@@ -58,7 +58,7 @@ class InningState:
                         toBase = THIRD
                     self.addRunner(runnerObj, toBase)
 
-        if duringAB == True:
+        if duringAB:
             if not endAB:
                 self.actionCount += 1
             for key, r in self.runnerStack.items():
@@ -74,8 +74,7 @@ class InningState:
             runnerObj = self.onBase[key]
             runnerObj.advance(self.actionCount, r.code, r.toBase, r.out)
             # If a runner scores or is out on the play, take him off the bases.
-            if r.toBase == HOME or r.toBase == HOME_M or \
-               r.out == True:
+            if r.toBase == HOME or r.toBase == HOME_M or r.out:
                 self.onBase.pop(key)
         self.runnerStack = {}
 
@@ -123,7 +122,7 @@ class _Batter():
         self.onBase = toBase
         while len(self.events) < actionCount:
             self.events.append(None)
-        if (toBase == HOME or toBase == HOME_M) and out == False:
+        if (toBase == HOME or toBase == HOME_M) and not out:
             self.willScore = True
         e = _Event("RunnerAdvance", code, fromBase, toBase, out)
         self.events.append(e)

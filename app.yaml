@@ -1,4 +1,4 @@
-application: scorecardbuilder
+application: scorecardbuilder-hrd
 version: 1
 runtime: python
 api_version: 1
@@ -16,4 +16,3 @@ handlers:
 
 - url: /.*
   script: driver.py
-
