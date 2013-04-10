@@ -1,0 +1,6 @@
+ScoreFX: Allen Scorecard Creator
+================================
+
+A tool, currently [running on Google App Engine](http://scorecardbuilder.appspot.com/), to automatically create an Allen Scorecard from [XML](http://gd2.mlb.com/components/game/mlb/) play by play data.
+
+Read Dave Allen's description of this [new scoring method](http://baseballanalysts.com/archives/2010/02/another_attempt.php) and see a few more interesting game [examples](http://baseballanalysts.com/archives/2010/04/looking_at_some_1.php).
