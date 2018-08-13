@@ -38,13 +38,13 @@ def getGames(gameDate):
         date = gameDate.strftime('%d')
 
         url = ('http://gd2.mlb.com/components/game/mlb/year_%s/month_%s/'
-               'day_%s/') % (year, month, date)
+               'day_%s') % (year, month, date)
 
         data = urlopen(url).read()
 
         games = []
-        for game in re.findall('href="(gid_%s_%s_%s.*?)"' % (year, month,
-                                                             date), data):
+        for game in re.findall('href="day_%s/(gid_%s_%s_%s.*?)"' %
+                               (date, year, month, date), data):
             away = game.split('_')[4][:3]
             if 'mlb' in away:
                 away = away[0:3]
@@ -157,7 +157,7 @@ class BuildScorecard(webapp2.RequestHandler):
         parser.setContentHandler(p)
 
         # Read the inning directory and process each inning
-        s = urlopen(url + '/inning').read()
+        s = urlopen(url + '/inning/').read()
 
         for i in range(1, len(re.findall('"inning_\d+\.xml"', s)) + 1):
             parser.parse(urlopen(url + '/inning/inning_' + str(i) + '.xml'))
