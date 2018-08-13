@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import tempfile
-import const
+from constants import ERROR, HIT, OTHER, OUT
 
 
 class BoxScore:
@@ -528,12 +528,12 @@ function moveToBottom(src)
 
         x += m * 15
         weight = "normal"
-        if result == const.OUT:
+        if result == OUT:
             color = "red"
-        elif result == const.HIT:
+        elif result == HIT:
             color = "green"
             weight = "bold"
-        elif result == const.ERROR:
+        elif result == ERROR:
             color = "orange"
         else:
             color = "black"

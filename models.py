@@ -107,7 +107,7 @@ class _Batter():
         self.pid = pid  # from MLB XML
         self.name = pid
         self.code = code  # F7, L8, G6, etc.
-        self.result = result  # ERROR, HIT, OTHER, OUT (const.py)
+        self.result = result  # ERROR, HIT, OTHER, OUT (constants.py)
         self.desc = desc  # Description text used for the tooltips.
         # List of events, indexed by actionCount.
         # If no event at an index, use None.

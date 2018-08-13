@@ -1,3 +1,5 @@
+ERROR, HIT, OTHER, OUT = 1, 2, 3, 4
+
 TEAMS = {'ana': 'LAA',
          'ari': 'ARI',
          'atl': 'ATL',

@@ -9,7 +9,7 @@ from xml.sax import saxutils
 
 from google.appengine.ext import db
 
-import const
+from constants import ERROR, HIT, OTHER, OUT
 from models import InningState
 
 WORDS = ["ground",
@@ -227,7 +227,7 @@ class procMLB(saxutils.handler.ContentHandler):
 
     def parsePlay(self, des):
         code = "XX"
-        result = const.OTHER
+        result = OTHER
         found = False
         i = 0
         # Split into sentences and strip trailing periods
@@ -251,33 +251,33 @@ class procMLB(saxutils.handler.ContentHandler):
             # "strikes out swinging"
             # "strikes out on foul tip"
             code = PLAYS["strikeout"]
-            result = const.OUT
+            result = OUT
         elif word == "called":
             # "called out on strikes"
             code = PLAYS["strikeout_looking"]
-            result = const.OUT
+            result = OUT
         elif word == "walks":
             code = PLAYS["walk"]
-            result = const.HIT
+            result = HIT
         elif word == "ground":
             mtch = re.search("ground bunts into a force out.*?, (\w*)", action)
             if mtch:
                 code = PLAYS["ground"] + POSITIONS[mtch.group(1)]
-                result = const.OUT
+                result = OUT
         elif word == "grounds":
             mtch = re.search("grounds out.*?, (\w*)", action)
             if mtch:
                 code = PLAYS["ground"] + POSITIONS[mtch.group(1)]
-                result = const.OUT
+                result = OUT
             elif (words[i + 1] == "out" and words[i + 2] == "to"):
                 code = PLAYS["ground"] + POSITIONS[words[i + 3]]
-                result = const.OUT
+                result = OUT
             elif (words[i + 1] == "out" and words[i + 3] == "to"):
                 code = PLAYS["ground"] + POSITIONS[words[i + 4]]
-                result = const.OUT
+                result = OUT
             elif ''.join(words[i + 1:i + 4]) == "intodoubleplay,":
                 code = "DP"
-                result = const.OUT
+                result = OUT
             elif ''.join(words[i + 1:i + 5]) == "intoaforceout,":
                 # description is "grounds into a force out, (pos) to (pos)"
                 # or "grounds into a force out, fielded by (pos)."
@@ -288,29 +288,29 @@ class procMLB(saxutils.handler.ContentHandler):
                     code += POSITIONS[mtch.group(1)]
                 else:
                     code += POSITIONS[tmp.split()[0]]
-                result = const.OUT
+                result = OUT
         elif word == "flies" or word == "pops":
             mtch = re.search("out.*? to (\w*)", action)
             if mtch:
                 code = PLAYS["fly"] + POSITIONS[mtch.group(1)]
-                result = const.OUT
+                result = OUT
             mtch = re.search("into.*? double play, (\w*)", action)
             if mtch:
                 code = PLAYS["fly"] + POSITIONS[mtch.group(1)]
-                result = const.OUT
+                result = OUT
         elif word == "lines":
             mtch = re.search("out.*? to (\w*)", action)
             if mtch:
                 code = PLAYS["line"] + POSITIONS[mtch.group(1)]
-                result = const.OUT
+                result = OUT
             mtch = re.search("into.*? double play, (\w*)", action)
             if mtch:
                 code = PLAYS["line"] + POSITIONS[mtch.group(1)]
-                result = const.OUT
+                result = OUT
             mtch = re.search("into.*? triple play, (\w*)", action)
             if mtch:
                 code = 'TP'  # PLAYS["line"] + positions[mtch.group(1)]
-                result = const.OUT
+                result = OUT
         elif word == "singles" or word == "doubles" or word == "triples":
             # Description is "on a (fly ball|ground ball|line drive|pop up)
             # to (position)" there is sometimes an adjective
@@ -321,34 +321,34 @@ class procMLB(saxutils.handler.ContentHandler):
             if tmp == "pop" or tmp == "bunt":
                 tmp = "fly"
             code = PLAYS[tmp] + POSITIONS[mtch.group(2)]
-            result = const.HIT
+            result = HIT
         elif word == "reaches":
             if re.search("reaches on .* error", action):
                 mtch = re.search("error by (\w*)", action)
                 code = PLAYS["error"] + POSITIONS[mtch.group(1)]
-                result = const.ERROR
+                result = ERROR
             if re.search("reaches on a fielder's choice", action):
                 mtch = re.search("fielded by (\w*)", action)
                 if not mtch:
                     mtch = re.search(("reaches on a fielder's choice out, "
                                       "(\w*)"), action)
                 code = PLAYS["fielder's choice"] + POSITIONS[mtch.group(1)]
-                result = const.OTHER
+                result = OTHER
             if re.search("reaches on catcher interference", action):
                 code = PLAYS["catcher interference"]
-                result = const.OTHER
+                result = OTHER
         elif word == "homers":
             code = PLAYS["home run"]
-            result = const.HIT
+            result = HIT
         elif word == "out":
             mtch = re.search("on a sacrifice (\w*)(,| to) (\w*)", action)
             if mtch:
                 if mtch.group(1) == "fly":
                     code = PLAYS["sac fly"] + POSITIONS[mtch.group(3)]
-                    result = const.OUT
+                    result = OUT
                 elif mtch.group(1) == "bunt":
                     code = PLAYS["sac bunt"] + POSITIONS[mtch.group(3)]
-                    result = const.OUT
+                    result = OUT
         elif word == "hits":
             mtch = re.search("ground-rule double", action)
             if mtch:
@@ -358,25 +358,25 @@ class procMLB(saxutils.handler.ContentHandler):
                                   "(\w*)"), action)
                 if mtch:
                     code = PLAYS[mtch.group(1)] + POSITIONS[mtch.group(2)]
-                    result = const.HIT
+                    result = HIT
                 mtch = re.search(("ground-rule double .* on a (\w*) .*? down "
                                   "the (\w*)"), action)
                 if mtch:
                     code = PLAYS[mtch.group(1)] + POSITIONS[mtch.group(2)]
-                    result = const.HIT
+                    result = HIT
             elif ''.join(words[i + 1:i + 4]) == "agrandslam":
                 code = PLAYS["home run"]
-                result = const.HIT
+                result = HIT
             elif ''.join(words[i + 1:i + 4]) == "asacrificebunt":
                 code = PLAYS["sac bunt"]
-                result = const.OUT
+                result = OUT
             elif ''.join(words[i + 1:i + 5]) == "aninside-the-parkhomerun":
                 code = PLAYS["home run"]
-                result = const.HIT
+                result = HIT
         elif word == "hit":
             if re.search("hit by pitch", action):
                 code = PLAYS["hit by pitch"]
-                result = const.HIT
+                result = HIT
         return (code, result)
 
     def updatePitcher(self, pitcherID):
